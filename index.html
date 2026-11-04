@@ -1,0 +1,3542 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trợ Lý Bảo Dưỡng Tàu Bay - Hệ Thống Quản Lý Ca Trực & Kho Vật Tư</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .dragging-step {
+      opacity: 0.4;
+      border: 2px dashed #C8102E !important;
+      background-color: #fff1f2 !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-200 selection:text-slate-900">
+
+  <!-- DATALIST GỢI Ý TOÀN CỤC -->
+  <datalist id="global-pn-datalist"></datalist>
+  <datalist id="amm-master-datalist"></datalist>
+
+  <!-- =========================================================
+       MÀN HÌNH ĐĂNG NHẬP (CLEAN AVIATION UI - ĐỎ VÀNG TRẮNG)
+  ========================================================== -->
+  <div id="login-screen" class="min-h-screen bg-slate-100 flex flex-col justify-center items-center p-4">
+    <div class="max-w-md w-full bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+      <div class="bg-[#C8102E] text-white p-6 text-center border-b-4 border-[#F59E0B]">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-[#F59E0B] text-slate-950 flex items-center justify-center shadow-md mb-3">
+          <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+          </svg>
+        </div>
+        <h1 class="text-xl font-black uppercase tracking-tight">TRỢ LÝ BẢO DƯỠNG TÀU BAY</h1>
+        <p class="text-xs font-medium text-red-100 mt-1">Hệ Thống Quản Lý Ca Trực, Kho P/N, Pickslip & Form 586</p>
+      </div>
+
+      <form onsubmit="handleLogin(event)" class="p-6 space-y-4">
+        <div id="login-error" class="hidden bg-red-50 border border-red-300 text-[#C8102E] p-3 rounded-xl text-xs font-bold"></div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Tên Đăng Nhập *</label>
+          <input id="login-username" type="text" required placeholder="Nhập tên đăng nhập..." class="w-full bg-slate-50 border border-slate-300 focus:border-[#C8102E] rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Mật Khẩu *</label>
+          <input id="login-password" type="password" required placeholder="Nhập mật khẩu..." class="w-full bg-slate-50 border border-slate-300 focus:border-[#C8102E] rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 focus:outline-none" />
+        </div>
+
+        <button type="submit" class="w-full bg-[#C8102E] hover:bg-red-800 text-white font-bold py-3.5 rounded-xl shadow-md text-sm uppercase tracking-wider transition active:scale-95">
+          ĐĂNG NHẬP HỆ THỐNG
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       GIAO DIỆN CHÍNH SAU KHI ĐĂNG NHẬP
+  ========================================================== -->
+  <div id="app-shell" class="hidden min-h-screen flex flex-col">
+    <!-- TOP BAR -->
+    <header class="sticky top-0 z-30 bg-[#C8102E] text-white shadow-md border-b-4 border-[#F59E0B]">
+      <div class="max-w-[1560px] mx-auto px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+        <!-- LOGO MÁY BAY: Nhấn vào về mục Ca Làm Việc -->
+        <button onclick="switchMainTab('work')" class="flex items-center gap-3 text-left group cursor-pointer focus:outline-none" title="Nhấn để về màn hình Ca Làm Việc">
+          <div class="w-10 h-10 rounded-xl bg-[#F59E0B] group-hover:bg-amber-400 text-slate-950 flex items-center justify-center font-black shadow transition">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-base sm:text-lg font-extrabold uppercase leading-none group-hover:text-amber-300 transition">TRỢ LÝ BẢO DƯỠNG TÀU BAY</h1>
+            <p class="text-[11px] text-red-100 font-medium mt-0.5">Nhấn logo để về Ca Làm Việc</p>
+          </div>
+        </button>
+
+        <!-- ĐỒNG HỒ DUAL CLOCK (UTC & VN) KÈM NGÀY THÁNG NĂM BÊN DƯỚI -->
+        <div class="flex items-center gap-4 bg-white text-slate-900 border-2 border-[#F59E0B] rounded-xl px-3.5 py-1 shadow-sm font-mono">
+          <div class="flex flex-col items-center">
+            <div class="flex items-center gap-1.5">
+              <span class="bg-[#C8102E] text-white font-bold px-1.5 py-0.5 rounded text-[10px] leading-none">UTC</span>
+              <span id="clock-utc" class="font-bold text-[#C8102E] text-xs sm:text-sm tracking-wider">00:00:00Z</span>
+            </div>
+            <span id="date-utc" class="text-[10px] font-semibold text-slate-500 mt-0.5">Ngày --/--/----</span>
+          </div>
+
+          <div class="h-6 w-px bg-slate-200"></div>
+
+          <div class="flex flex-col items-center">
+            <div class="flex items-center gap-1.5">
+              <span class="bg-[#F59E0B] text-slate-950 font-bold px-1.5 py-0.5 rounded text-[10px] leading-none">VN</span>
+              <span id="clock-vn" class="font-bold text-slate-900 text-xs sm:text-sm tracking-wider">00:00:00</span>
+            </div>
+            <span id="date-vn" class="text-[10px] font-semibold text-slate-500 mt-0.5">Ngày --/--/----</span>
+          </div>
+        </div>
+
+        <!-- THÔNG TIN TÀI KHOẢN & SAO LƯU -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="openProfileModal()" class="bg-white/10 hover:bg-white/20 border border-white/30 px-3 py-1 rounded-xl text-xs text-left transition">
+            <div id="user-badge-name" class="font-bold text-amber-300"></div>
+            <div id="user-badge-sub" class="text-[10px] text-red-100">Nhấn để sửa thông tin</div>
+          </button>
+
+          <button onclick="openModal('modal-backup')" class="bg-[#F59E0B] hover:bg-amber-400 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs shadow-sm transition">
+            File Sao Lưu
+          </button>
+
+          <button onclick="handleLogout()" class="bg-white hover:bg-red-50 text-[#C8102E] font-bold px-3 py-2 rounded-xl text-xs shadow-sm transition">
+            Đăng Xuất
+          </button>
+        </div>
+      </div>
+
+      <!-- THANH ĐIỀU HƯỚNG CÁC MỤC CHÍNH -->
+      <div class="bg-white text-slate-800 border-t border-slate-200">
+        <div id="nav-grid" class="max-w-[1560px] mx-auto px-2 sm:px-6 py-2 grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <button onclick="switchMainTab('work')" id="nav-work" class="py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border transition"></button>
+          <button onclick="switchMainTab('partnumber')" id="nav-partnumber" class="py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border transition"></button>
+          <button onclick="switchMainTab('warehouse')" id="nav-warehouse" class="py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border transition"></button>
+          <button onclick="switchMainTab('form586')" id="nav-form586" class="py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border transition"></button>
+          <button onclick="switchMainTab('dictionary')" id="nav-dictionary" class="py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border transition"></button>
+          <button onclick="switchMainTab('admin')" id="nav-admin" class="hidden py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm items-center justify-center gap-1.5 border transition"></button>
+        </div>
+      </div>
+    </header>
+
+    <!-- NỘI DUNG CHÍNH -->
+    <main id="main-container" class="flex-1 max-w-[1560px] w-full mx-auto p-3 sm:p-6"></main>
+  </div>
+
+  <!-- TOAST THÔNG BÁO -->
+  <div id="toast-box" class="hidden fixed bottom-5 right-5 z-50 max-w-md bg-slate-900 text-white border-l-4 border-[#F59E0B] rounded-xl shadow-xl p-4">
+    <div id="toast-title" class="font-bold text-sm text-[#F59E0B]"></div>
+    <div id="toast-msg" class="text-xs text-slate-200 mt-1 leading-relaxed"></div>
+  </div>
+
+  <!-- =========================================================
+       CÁC HỘP THOẠI MODAL
+  ========================================================== -->
+
+  <!-- MODAL 1: CHỈNH SỬA THÔNG TIN CÁ NHÂN -->
+  <div id="modal-profile" class="hidden fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div class="bg-[#C8102E] text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+        <h3 class="font-bold text-base">CHỈNH SỬA THÔNG TIN TÀI KHOẢN</h3>
+        <button onclick="closeModal('modal-profile')" class="text-white hover:text-amber-200 font-bold text-lg">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Tên Đăng Nhập</label>
+          <input id="pf-username" type="text" disabled class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-semibold text-slate-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Họ và Tên *</label>
+          <input id="pf-fullname" type="text" placeholder="Nhập họ và tên (Hoa/Thường tùy ý)..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-semibold text-slate-900" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Mã Thành Viên *</label>
+            <input id="pf-staffid" type="text" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-mono font-bold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Mật Khẩu Mới</label>
+            <input id="pf-password" type="text" placeholder="Để trống nếu giữ nguyên" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-mono font-semibold" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Chức Vụ / Đội Bảo Dưỡng *</label>
+          <input id="pf-title" type="text" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-semibold" />
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeModal('modal-profile')" class="flex-1 bg-slate-100 hover:bg-slate-200 font-semibold py-2.5 rounded-xl text-sm">Hủy</button>
+          <button onclick="saveUserProfile()" class="flex-1 bg-[#C8102E] hover:bg-red-800 text-white font-bold py-2.5 rounded-xl text-sm shadow">Lưu Thay Đổi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: BẮT ĐẦU CA MỚI -->
+  <div id="modal-new-shift" class="hidden fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div class="bg-[#C8102E] text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+        <h3 class="font-bold text-base">BẮT ĐẦU CA LÀM VIỆC MỚI</h3>
+        <button onclick="closeModal('modal-new-shift')" class="text-white font-bold text-lg">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Ngày Bắt Đầu Ca *</label>
+          <input id="ns-date" type="date" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-bold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Giờ Bắt Đầu Ca (24 Giờ: 00 - 23) *</label>
+          <div class="grid grid-cols-2 gap-3">
+            <select id="ns-hour" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-center"></select>
+            <select id="ns-min" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-center"></select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Địa Điểm Làm Việc (Tự nhập) *</label>
+          <input id="ns-loc" type="text" placeholder="VD: Sân đỗ Bến 15, Hangar A7..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-semibold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Ghi Chú Ca</label>
+          <input id="ns-note" type="text" placeholder="VD: Ca trực đêm..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm" />
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeModal('modal-new-shift')" class="flex-1 bg-slate-100 font-semibold py-2.5 rounded-xl text-sm">Hủy</button>
+          <button onclick="createNewShift()" class="flex-1 bg-[#C8102E] hover:bg-red-800 text-white font-bold py-2.5 rounded-xl text-sm shadow">Bắt Đầu Ca Mới</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: THÊM VIỆC CHÍNH VÀO CA (CHỈ GỒM TÊN VIỆC, TÀU BAY & NHIỀU MÃ AMM) -->
+  <div id="modal-add-task" class="hidden fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div class="bg-[#C8102E] text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+        <h3 class="font-bold text-base">THÊM CÔNG VIỆC CHÍNH VÀO CA</h3>
+        <button onclick="closeModal('modal-add-task')" class="text-white font-bold text-lg">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">1. Nội Dung Công Việc Làm Gì? *</label>
+          <input id="at-title" type="text" placeholder="VD: Thay cụm bánh xe chính số 2, Kiểm tra mức dầu IDG..." class="w-full bg-slate-50 border border-slate-300 focus:border-[#C8102E] rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-900 focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">2. Số Đăng Bạ Tàu Bay *</label>
+          <input id="at-reg" type="text" value="VN-A688" placeholder="VD: VN-A688" class="w-full bg-slate-50 border border-slate-300 focus:border-[#C8102E] rounded-xl px-3.5 py-2 text-sm font-bold text-slate-900 focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">3. Danh Sách Mã AMM (Tùy chọn - Có thể thêm nhiều AMM)</label>
+          <div class="flex gap-2">
+            <input id="at-amm-input" type="text" list="amm-master-datalist" placeholder="Nhập hoặc chọn mã AMM rồi nhấn + Thêm AMM..." oninput="onModalAmmInputHint(this.value)" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-mono font-semibold focus:outline-none" />
+            <button type="button" onclick="addAmmChipToModal()" class="bg-[#F59E0B] hover:bg-amber-400 text-slate-950 font-bold px-3.5 py-2 rounded-xl text-xs shrink-0">
+              + Thêm AMM
+            </button>
+          </div>
+          <div id="at-amm-chips" class="flex flex-wrap gap-1.5 mt-2"></div>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeModal('modal-add-task')" class="flex-1 bg-slate-100 font-semibold py-2.5 rounded-xl text-sm">Hủy</button>
+          <button onclick="addDailyTaskToShift()" class="flex-1 bg-[#C8102E] hover:bg-red-800 text-white font-bold py-2.5 rounded-xl text-sm shadow">+ Thêm Vào Ca</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: TẠO PHIẾU PICKSLIP MỚI (NHẬP SỐ PICKSLIP RỒI MỚI TẠO KÈM NGÀY GIỜ) -->
+  <div id="modal-create-pickslip" class="hidden fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div class="bg-[#C8102E] text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+        <h3 class="font-bold text-base">TẠO PHIẾU LĨNH VẬT TƯ (PICKSLIP) MỚI</h3>
+        <button onclick="closeModal('modal-create-pickslip')" class="text-white font-bold text-lg">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nhập Số Phiếu Pickslip *</label>
+          <input id="cp-number" type="text" placeholder="VD: PS-2026-8895" class="w-full bg-slate-50 border border-slate-300 focus:border-[#C8102E] rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold text-slate-900 focus:outline-none" />
+        </div>
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-600">
+          Thời gian ngày tạo phiếu sẽ được tự động ghi nhận theo giờ hệ thống khi bấm Tạo Phiếu.
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeModal('modal-create-pickslip')" class="flex-1 bg-slate-100 font-semibold py-2.5 rounded-xl text-sm">Hủy</button>
+          <button onclick="confirmCreatePickslip()" class="flex-1 bg-[#C8102E] hover:bg-red-800 text-white font-bold py-2.5 rounded-xl text-sm shadow">+ Tạo Phiếu Ngay</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: THÔNG BÁO HỎI CẬP NHẬT FORM 586 KHI HOÀN THÀNH TASK CÓ AMM PHÙ HỢP -->
+  <div id="modal-confirm-586" class="hidden fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div class="bg-[#F59E0B] text-slate-950 p-4 flex items-center justify-between border-b border-amber-400">
+        <h3 class="font-extrabold text-base">PHÁT HIỆN ĐỀ MỤC FORM 586 PHÙ HỢP</h3>
+        <button onclick="closeModal('modal-confirm-586')" class="text-slate-800 font-bold text-lg">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-sm font-medium text-slate-700">
+          Công việc bạn vừa hoàn thành có mã <strong>AMM</strong> trùng khớp với đề mục trong <strong>Form 586 Gốc</strong>:
+        </p>
+        <div id="confirm-586-matched-list" class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 space-y-2 text-xs font-semibold text-slate-800"></div>
+        <p class="text-xs text-slate-600">
+          Bạn có muốn ghi nhận tiến độ công việc này vào <strong>Sổ Tay Form 586</strong> không?
+        </p>
+        <div class="flex gap-3 pt-2">
+          <button onclick=" closeModal('modal-confirm-586')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-2.5 rounded-xl text-xs sm:text-sm">
+            Chỉ Hoàn Thành (Không Lưu 586)
+          </button>
+          <button onclick="confirmRecordToForm586()" class="flex-1 bg-[#C8102E] hover:bg-red-800 text-white font-bold py-2.5 rounded-xl text-xs sm:text-sm shadow">
+            ✓ Có, Cập Nhật Vào Form 586
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: POPUP TỔNG HỢP VẬT TƯ CẦN ĐẶT (CHỈ HIỆN P/N & SỐ LƯỢNG + NÚT COPY RIÊNG + NÚT CHUYỂN PICKSLIP TẠM RIÊNG) -->
+  <div id="modal-order-summary" class="hidden fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div class="bg-[#C8102E] text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+        <h3 class="font-bold text-base">TỔNG HỢP VẬT TƯ CẦN ĐẶT (P/N & SỐ LƯỢNG)</h3>
+        <button onclick="closeModal('modal-order-summary')" class="text-white font-bold text-lg">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-xs text-slate-600 font-medium">
+          Danh sách tối giản gồm <strong>Part Number (P/N)</strong> và <strong>Số lượng</strong>. Bạn có thể bấm <strong>Copy</strong> để gửi Kho hoặc bấm <strong>Chuyển Thành Pickslip Tạm</strong> (sau khi chuyển sẽ tự động làm sạch danh sách cần đặt):
+        </p>
+        <textarea id="order-summary-textarea" rows="8" readonly class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3.5 text-xs sm:text-sm font-mono font-bold text-slate-800 focus:outline-none"></textarea>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+          <button onclick="copyOrderSummaryOnly()" class="bg-slate-800 hover:bg-slate-900 text-[#F59E0B] font-bold py-3 px-4 rounded-xl text-xs sm:text-sm shadow flex items-center justify-center gap-1.5 transition">
+            📋 Copy (P/N & SL)
+          </button>
+          <button onclick="convertOrdersToTempPickslipAndClear()" class="bg-[#C8102E] hover:bg-red-800 text-white font-bold py-3 px-4 rounded-xl text-xs sm:text-sm shadow flex items-center justify-center gap-1.5 transition">
+            📦 Chuyển Thành Pickslip Tạm
+          </button>
+        </div>
+        <div class="text-right pt-1">
+          <button onclick="closeModal('modal-order-summary')" class="text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-1">Đóng cửa sổ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 7: CHUYỂN PICKSLIP TẠM THÀNH PICKSLIP CHÍNH THỨC CỦA TASK (KHI KHO ĐÃ CHO SỐ PICKSLIP) -->
+  <div id="modal-convert-pickslip" class="hidden fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div class="bg-[#C8102E] text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+        <h3 class="font-bold text-base">CHUYỂN PICKSLIP TẠM VÀO CÔNG VIỆC</h3>
+        <button onclick="closeModal('modal-convert-pickslip')" class="text-white font-bold text-lg">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div id="conv-temp-info" class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs font-semibold text-slate-800"></div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">1. Chọn Công Việc (Task) Nhận Phiếu Pickslip *</label>
+          <select id="conv-target-task" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-900"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">2. Nhập Số Pickslip Do Kho Cấp *</label>
+          <input id="conv-ps-no" type="text" placeholder="Nhập số Pickslip bên Kho đã cho (VD: PS-2026-9012)..." class="w-full bg-slate-50 border border-slate-300 focus:border-[#C8102E] rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold focus:outline-none" />
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeModal('modal-convert-pickslip')" class="flex-1 bg-slate-100 font-semibold py-2.5 rounded-xl text-sm">Hủy</button>
+          <button onclick="confirmConvertTempPickslipToTask()" class="flex-1 bg-[#C8102E] hover:bg-red-800 text-white font-bold py-2.5 rounded-xl text-sm shadow">↪ Chuyển Vào Công Việc</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 7B: NHẬP SỐ ĐĂNG BẠ TÀU BAY KHI ĐẶT VẬT TƯ -->
+  <div id="modal-order-part-reg" class="hidden fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div class="bg-[#C8102E] text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+        <h3 class="font-bold text-base">ĐẶT VẬT TƯ — NHẬP SỐ TÀU BAY</h3>
+        <button onclick="closeModal('modal-order-part-reg')" class="text-white font-bold text-lg">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div id="order-part-preview" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-semibold text-slate-800"></div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nhập Số Đăng Bạ Tàu Bay *</label>
+            <input id="order-part-reg-input" type="text" placeholder="Nhập số tàu (VD: VN-A...)" onkeydown="if(event.key==='Enter') confirmAddPartToOrderList()" class="w-full bg-slate-50 border border-slate-300 focus:border-[#C8102E] rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Số Lượng *</label>
+            <input id="order-part-qty-input" type="number" min="1" value="1" class="w-full bg-slate-50 border border-slate-300 focus:border-[#C8102E] rounded-xl px-3 py-2.5 text-sm font-bold text-center text-slate-900 focus:outline-none" />
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeModal('modal-order-part-reg')" class="flex-1 bg-slate-100 font-semibold py-2.5 rounded-xl text-sm">Hủy</button>
+          <button onclick="confirmAddPartToOrderList()" class="flex-1 bg-[#C8102E] hover:bg-red-800 text-white font-bold py-2.5 rounded-xl text-sm shadow">+ Đưa Vào Danh Sách Đặt</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 8: NHẬP THỦ CÔNG PART NUMBER MỚI -->
+  <div id="modal-add-pn" class="hidden fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div class="bg-[#C8102E] text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+        <h3 class="font-bold text-base">+ NHẬP THỦ CÔNG PART NUMBER (IPC)</h3>
+        <button onclick="closeModal('modal-add-pn')" class="text-white font-bold text-lg">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-slate-600 mb-1">Số Part Number (P/N) *</label>
+            <input id="pn-code" type="text" placeholder="VD: MS24665-355" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-mono font-bold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Mã ATA</label>
+            <input id="pn-ata" type="text" value="ATA 32" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-semibold" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Tên Vật Tư / Phụ Tùng *</label>
+          <input id="pn-name" type="text" placeholder="Nhập tên vật tư..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-semibold" />
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Đơn Vị Tính</label>
+            <input id="pn-unit" type="text" value="EA" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-bold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Phân Loại Hàng</label>
+            <select id="pn-type" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-semibold">
+              <option value="Consumable">Consumable</option>
+              <option value="Rotable">Rotable</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Tham Chiếu IPC</label>
+            <input id="pn-ipc" type="text" placeholder="IPC 32-41-11" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-mono" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Ghi Chú Kỹ Thuật</label>
+          <textarea id="pn-note" rows="2" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs"></textarea>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeModal('modal-add-pn')" class="flex-1 bg-slate-100 font-semibold py-2.5 rounded-xl text-sm">Hủy</button>
+          <button onclick="saveManualPartNumber()" class="flex-1 bg-[#C8102E] hover:bg-red-800 text-white font-bold py-2.5 rounded-xl text-sm shadow">Lưu Part Number</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 9: NHẬP ĐỀ MỤC FORM 586 GỐC -->
+  <div id="modal-add-586-master" class="hidden fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div class="bg-[#C8102E] text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+        <h3 class="font-bold text-base">NHẬP ĐỀ MỤC FORM 586 GỐC ĐỂ ĐỐI CHIẾU</h3>
+        <button onclick="closeModal('modal-add-586-master')" class="text-white font-bold text-lg">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-2">
+            <label class="block text-xs font-bold text-slate-600 mb-1">Mã Đề Mục 586 *</label>
+            <input id="m586-code" type="text" placeholder="VD: 586-ATA32-05" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-mono font-bold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Mã ATA *</label>
+            <input id="m586-ata" type="text" value="ATA 32" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-bold" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Nội Dung Yêu Cầu *</label>
+          <textarea id="m586-desc" rows="2" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm font-semibold"></textarea>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Số Lần Yêu Cầu *</label>
+            <input id="m586-req" type="number" min="1" value="1" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-bold text-center" />
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs font-bold text-slate-600 mb-1">Mã AMM Liên Kết (Dùng để khớp tự động)</label>
+            <input id="m586-amm" type="text" placeholder="VD: AMM-32-41-11-000-801" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-mono font-semibold" />
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeModal('modal-add-586-master')" class="flex-1 bg-slate-100 font-semibold py-2.5 rounded-xl text-sm">Hủy</button>
+          <button onclick="saveForm586MasterItem()" class="flex-1 bg-[#C8102E] hover:bg-red-800 text-white font-bold py-2.5 rounded-xl text-sm shadow">Lưu Đề Mục 586</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 10: CỘNG NHANH TỪ ĐIỂN -->
+  <div id="modal-add-dict" class="hidden fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div class="bg-[#C8102E] text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+        <h3 class="font-bold text-base">+ CỘNG NHANH TỪ MỚI</h3>
+        <button onclick="closeModal('modal-add-dict')" class="text-white font-bold text-lg">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Từ Viết Tắt (Abbr) *</label>
+          <input id="dict-abbr" type="text" placeholder="VD: PTU, FADEC..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-bold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Từ Rõ Tiếng Anh (Full Term)</label>
+          <input id="dict-full" type="text" placeholder="VD: Power Transfer Unit" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-semibold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Nghĩa Tiếng Việt *</label>
+          <input id="dict-vn" type="text" placeholder="VD: Bộ truyền công suất thủy lực" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-semibold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Ghi Chú</label>
+          <textarea id="dict-notes" rows="2" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs"></textarea>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeModal('modal-add-dict')" class="flex-1 bg-slate-100 font-semibold py-2.5 rounded-xl text-sm">Hủy</button>
+          <button onclick="saveNewDictItem()" class="flex-1 bg-[#C8102E] hover:bg-red-800 text-white font-bold py-2.5 rounded-xl text-sm shadow">Lưu Từ Mới</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 11: ADMIN TẠO TÀI KHOẢN THÀNH VIÊN MỚI (KHÔNG CÓ DẤU CÁCH Ở USERNAME) -->
+  <div id="modal-create-user" class="hidden fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div class="bg-[#C8102E] text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+        <h3 class="font-bold text-base">TẠO TÀI KHOẢN THÀNH VIÊN MỚI</h3>
+        <button onclick="closeModal('modal-create-user')" class="text-white font-bold text-lg">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Tên Đăng Nhập (Không dấu cách) *</label>
+            <input id="cu-username" type="text" oninput="this.value = this.value.replace(/\s+/g, '')" placeholder="VD: HUNG.B2" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-mono font-bold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Mật Khẩu *</label>
+            <input id="cu-password" type="text" value="123456" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-mono font-bold" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Họ và Tên Thành Viên (Hoa/Thường tùy ý) *</label>
+          <input id="cu-fullname" type="text" placeholder="VD: Lê Việt Hùng" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm font-semibold" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Mã Thành Viên (Tự tạo) *</label>
+            <div class="flex gap-1">
+              <input id="cu-staffid" type="text" class="w-full bg-amber-50 border border-amber-300 rounded-xl px-3 py-2 text-sm font-mono font-bold" />
+              <button type="button" onclick="regenerateMemberCodeField()" class="bg-slate-800 text-amber-400 px-2.5 rounded-xl font-bold text-xs">↻</button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Vai Trò</label>
+            <select id="cu-role" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-semibold">
+              <option value="member">Thành Viên</option>
+              <option value="admin">Quản Trị Viên</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Chức Vụ / Đội Bảo Dưỡng</label>
+          <input id="cu-title" type="text" value="Kỹ sư B1.1 - Đội Line" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-sm" />
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeModal('modal-create-user')" class="flex-1 bg-slate-100 font-semibold py-2.5 rounded-xl text-sm">Hủy</button>
+          <button onclick="createNewMemberAccount()" class="flex-1 bg-[#C8102E] hover:bg-red-800 text-white font-bold py-2.5 rounded-xl text-sm shadow">+ Tạo Tài Khoản</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 12: FILE SAO LƯU -->
+  <div id="modal-backup" class="hidden fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl overflow-hidden">
+      <div class="bg-[#C8102E] text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+        <h3 class="font-bold text-base">FILE SAO LƯU HỆ THỐNG</h3>
+        <button onclick="closeModal('modal-backup')" class="text-white font-bold text-lg">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+          Xuất toàn bộ dữ liệu các tài khoản, Ca làm việc, Kho Part Number, Pickslip, Tool mượn và Sổ tay Form 586 ra file <strong>.JSON</strong> để chuyển sang thiết bị khác.
+        </p>
+        <button onclick="exportFullBackupJSON()" class="w-full bg-[#C8102E] hover:bg-red-800 text-white font-bold py-3 px-4 rounded-xl shadow text-sm transition">
+          ⬇ Tải File Sao Lưu (.JSON)
+        </button>
+        <label class="w-full bg-[#F59E0B] hover:bg-amber-400 text-slate-950 font-bold py-3 px-4 rounded-xl shadow flex items-center justify-center text-sm cursor-pointer transition">
+          <span>⬆ Nạp File Sao Lưu Từ Thiết Bị Khác</span>
+          <input type="file" accept=".json" onchange="importFullBackupJSON(event)" class="hidden" />
+        </label>
+        <div class="pt-3 border-t border-slate-200 flex justify-between items-center">
+          <button onclick="resetAllDemoData()" class="text-xs font-semibold text-slate-400 hover:text-[#C8102E]">
+            ↻ Khôi phục dữ liệu mẫu ban đầu
+          </button>
+          <button onclick="closeModal('modal-backup')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-1.5 rounded-lg text-xs">
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       MÃ NGUỒN JAVASCRIPT ĐIỀU KHIỂN TOÀN BỘ ỨNG DỤNG
+  ========================================================== -->
+  <script>
+    const DEFAULT_MASTER_TASKS = [
+      {
+        Task_ID: 'AMM-32-41-11-000-801',
+        ATA: 'ATA 32',
+        Title: 'Thay thế cụm bánh xe chính (Main Landing Gear Wheel Assy Replacement)',
+        Steps: [
+          'Đảm bảo tàu bay đã chèn lốp (Wheel Chocks) và lắp chốt an toàn càng đáp (Landing Gear Safety Pins).',
+          'Xả áp suất lốp hoàn toàn trước khi tháo đai ốc trục (Deflate tire completely) nếu có dấu hiệu hư hỏng mâm.',
+          'Tháo nắp chụp bảo vệ và cảm biến tốc độ bánh xe (Tachometer/Brake Temp Sensor).',
+          'Sử dụng xe nâng bánh chuyên dụng (Wheel Dolly), tháo đai ốc chính và đưa bánh cũ ra ngoài.',
+          'Bôi mỡ chuyên dụng (Grease) lên bề mặt trục và lắp bánh mới đúng vị trí.',
+          'Siết lực đai ốc chính bằng cờ lê lực (Torque Wrench) theo thông số AMM (Initial Torque & Final Torque).',
+          'Lắp chốt chẻ an toàn (Cotter Pin), bơm Nitơ đúng áp suất tiêu chuẩn và ký xác nhận.'
+        ],
+        Form586_Item: '586-ATA32-01: Thực hành tháo lắp bánh xe chính và căn chỉnh lực siết (MLG Wheel Replacement)'
+      },
+      {
+        Task_ID: 'AMM-24-21-51-400-001',
+        ATA: 'ATA 24',
+        Title: 'Kiểm tra mức dầu và thay lọc dầu bộ phát điện IDG (IDG Oil Servicing & Filter Replacement)',
+        Steps: [
+          'Đảm bảo động cơ đã tắt ít nhất 5 phút và kéo CB liên quan trên buồng lái (Open Circuit Breakers).',
+          'Mở cửa nắp Fan Cowl Doors và lắp thanh chống an toàn (Hold-open rods).',
+          'Kiểm tra kính thăm dầu IDG (Sight Glass) xem vạch dầu có nằm trong dải xanh (Green Band) và kiểm tra chỉ thị DPI.',
+          'Đặt khay hứng dầu thải bên dưới, tháo cốc lọc dầu IDG và thu hồi gioăng cao su cũ (O-ring).',
+          'Lắp lõi lọc mới kèm O-ring mới đã bôi một lớp dầu mỏng, siết lực cốc lọc đúng quy định.',
+          'Nạp bổ sung dầu IDG qua cổng Pressure Fill bằng bơm chuyên dụng đến khi tràn cổng Overflow.',
+          'Vệ sinh sạch khu vực, thực hiện Engine Run kiểm tra rò rỉ (Leak Check) và đóng Fan Cowl.'
+        ],
+        Form586_Item: '586-ATA24-04: Bảo dưỡng định kỳ, thay lọc và nạp dầu hệ thống phát điện IDG'
+      },
+      {
+        Task_ID: 'AMM-29-10-00-200-001',
+        ATA: 'ATA 29',
+        Title: 'Kiểm tra và nạp bổ sung dầu thủy lực (Hydraulic Reservoir Fluid Servicing)',
+        Steps: [
+          'Đảm bảo các hệ thống thủy lực đã ngắt áp suất (Depressurized), cánh tà thu hết, càng đáp thả.',
+          'Kiểm tra áp suất khí nén trong bình tích áp (Reservoir Air Pressure Gauge).',
+          'Quan sát mức dầu trên đồng hồ chỉ thị tại Ground Service Panel và trên ECAM HYD Page.',
+          'Kết nối ống nạp từ xe bơm thủy lực vào cổng Filling Port và bơm bổ sung dầu Skydrol LD-4 đến mức Full Normal.',
+          'Tháo kết nối, đậy nắp chống bụi (Dust Cap) và vệ sinh sạch dầu Skydrol.'
+        ],
+        Form586_Item: '586-ATA29-02: Kiểm tra và nạp bổ sung dầu thủy lực hệ thống chính (Skydrol Servicing)'
+      }
+    ];
+
+    const DEFAULT_PART_CATALOG = [
+      {
+        Part_Number: '3-1531-3',
+        Part_Name: 'Cụm bánh xe chính (Main Landing Gear Wheel Assy)',
+        ATA: 'ATA 32',
+        Unit: 'EA',
+        Part_Type: 'Rotable',
+        IPC_Ref: 'IPC 32-41-11 Fig 01 Item 10',
+        Notes: 'Áp dụng cho dòng A320/A321 CEO & NEO. Kiểm tra áp suất Nitơ sau khi lắp.'
+      },
+      {
+        Part_Number: 'MS24665-355',
+        Part_Name: 'Chốt chẻ an toàn trục bánh chính (Cotter Pin)',
+        ATA: 'ATA 32',
+        Unit: 'EA',
+        Part_Type: 'Consumable',
+        IPC_Ref: 'IPC 32-41-11 Fig 01 Item 45',
+        Notes: 'Vật tư tiêu hao bắt buộc thay mới 100% mỗi lần tháo đai ốc trục bánh.'
+      },
+      {
+        Part_Number: '739519B',
+        Part_Name: 'Bộ lõi lọc dầu IDG kèm gioăng O-ring (IDG Scavenge Filter Kit)',
+        ATA: 'ATA 24',
+        Unit: 'KIT',
+        Part_Type: 'Consumable',
+        IPC_Ref: 'IPC 24-21-51 Fig 02 Item 15',
+        Notes: 'Bao gồm lõi lọc và 2 gioăng cao su chịu nhiệt.'
+      },
+      {
+        Part_Number: 'SKYDROL-LD4-1G',
+        Part_Name: 'Dầu thủy lực chống cháy Skydrol LD-4 (Can 1 Gallon)',
+        ATA: 'ATA 29',
+        Unit: 'GAL',
+        Part_Type: 'Consumable',
+        IPC_Ref: 'AMM 20-31-00 Consumables',
+        Notes: 'Đeo kính chống hóa chất khi nạp bổ sung.'
+      }
+    ];
+
+    const DEFAULT_FORM586_MASTER = [
+      {
+        Item_Code: '586-ATA32-01',
+        ATA: 'ATA 32',
+        Description: 'Thực hành tháo lắp bánh xe chính và căn chỉnh lực siết (MLG Wheel Replacement)',
+        Required_Count: 2,
+        Linked_AMM: 'AMM-32-41-11-000-801'
+      },
+      {
+        Item_Code: '586-ATA24-04',
+        ATA: 'ATA 24',
+        Description: 'Bảo dưỡng định kỳ, thay lọc và nạp dầu hệ thống phát điện IDG',
+        Required_Count: 1,
+        Linked_AMM: 'AMM-24-21-51-400-001'
+      },
+      {
+        Item_Code: '586-ATA29-02',
+        ATA: 'ATA 29',
+        Description: 'Kiểm tra và nạp bổ sung dầu thủy lực hệ thống chính (Skydrol Servicing)',
+        Required_Count: 2,
+        Linked_AMM: 'AMM-29-10-00-200-001'
+      }
+    ];
+
+    const DEFAULT_DICTIONARY = [
+      { Abbr: 'AMM', Full_Term: 'Aircraft Maintenance Manual', VN_Meaning: 'Tài liệu hướng dẫn bảo dưỡng tàu bay', Notes: 'Tài liệu gốc bắt buộc tra cứu quy trình tháo/lắp.' },
+      { Abbr: 'IPC', Full_Term: 'Illustrated Parts Catalog', VN_Meaning: 'Danh mục tra cứu phụ tùng có hình minh họa', Notes: 'Dùng để tra Part Number (P/N) khi lập phiếu lĩnh vật tư.' },
+      { Abbr: 'MEL', Full_Term: 'Minimum Equipment List', VN_Meaning: 'Danh mục thiết bị tối thiểu được phép bay', Notes: 'Dùng để trì hoãn hỏng hóc (Defer Defect) theo Cat A, B, C, D.' },
+      { Abbr: 'CRS', Full_Term: 'Certificate of Release to Service', VN_Meaning: 'Chứng chỉ phê chuẩn đưa tàu bay vào khai thác', Notes: 'Ký bởi kỹ sư B1/B2 sau khi hoàn tất bảo dưỡng.' },
+      { Abbr: 'FOD', Full_Term: 'Foreign Object Debris / Damage', VN_Meaning: 'Vật thể lạ gây nguy hiểm / Hư hỏng do vật thể lạ', Notes: 'Kiểm đếm đủ dụng cụ trước khi đóng khoang tàu bay.' },
+      { Abbr: 'IDG', Full_Term: 'Integrated Drive Generator', VN_Meaning: 'Bộ phát điện tích hợp bộ điều tốc không đổi', Notes: 'Thuộc ATA 24, cung cấp nguồn xoay chiều 115V 400Hz.' }
+    ];
+
+    function createWorkspaceTemplate() {
+      return {
+        masterTasks: JSON.parse(JSON.stringify(DEFAULT_MASTER_TASKS)),
+        partCatalog: JSON.parse(JSON.stringify(DEFAULT_PART_CATALOG)),
+        partOrders: [],
+        tempPickslips: [],
+        shifts: [],
+        activeShiftId: null,
+        dailyTasks: [],
+        selectedDailyTaskId: null,
+        form586Logs: [],
+        form586Master: JSON.parse(JSON.stringify(DEFAULT_FORM586_MASTER)),
+        dictionary: JSON.parse(JSON.stringify(DEFAULT_DICTIONARY))
+      };
+    }
+
+    const INITIAL_USERS = [
+      {
+        username: 'admin',
+        password: 'admin',
+        fullName: 'Quản Trị Viên Hệ Thống',
+        staffId: 'AD-0001',
+        role: 'admin',
+        title: 'Quản Trị Viên (Admin)'
+      }
+    ];
+
+    const STORAGE_KEY = 'AMA_HTML_CLEAN_V12';
+
+    let users = [];
+    let userWorkspaces = {};
+    let currentUser = null;
+
+    let mainTab = 'work';
+    let form586SubTab = 'compare';
+    let form586SearchQuery = '';
+    let adminSubTab = 'dashboard';
+    let adminShiftFilterStatus = 'all';
+    let adminShiftSearch = '';
+
+    let pnSearchQuery = '';
+    let dictSearchQuery = '';
+    let pickslipSearchQuery = '';
+    let expandedPickslipId = null;
+    let isStepsUnlocked = false;
+    let draggedStepIndex = null;
+    let modalAmmChips = [];
+    let pending586ConfirmData = null;
+    let convertingTempPsId = null;
+    let pendingOrderPartPN = null;
+    let currentClockStamp = '';
+
+    function loadSystemState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          users = Array.isArray(parsed.users) && parsed.users.length > 0 ? parsed.users : JSON.parse(JSON.stringify(INITIAL_USERS));
+          userWorkspaces = parsed.userWorkspaces || {};
+        } else {
+          users = JSON.parse(JSON.stringify(INITIAL_USERS));
+          userWorkspaces = { admin: createWorkspaceTemplate() };
+        }
+      } catch (e) {
+        users = JSON.parse(JSON.stringify(INITIAL_USERS));
+        userWorkspaces = { admin: createWorkspaceTemplate() };
+      }
+
+      if (!users.some(u => u.username.toLowerCase() === 'admin')) {
+        users.unshift(JSON.parse(JSON.stringify(INITIAL_USERS[0])));
+      }
+      users.forEach(u => {
+        if (!userWorkspaces[u.username]) {
+          userWorkspaces[u.username] = createWorkspaceTemplate();
+        }
+        const ws = userWorkspaces[u.username];
+        if (!Array.isArray(ws.partCatalog)) ws.partCatalog = JSON.parse(JSON.stringify(DEFAULT_PART_CATALOG));
+        if (!Array.isArray(ws.partOrders)) ws.partOrders = [];
+        if (!Array.isArray(ws.tempPickslips)) ws.tempPickslips = [];
+        (ws.dailyTasks || []).forEach(t => {
+          if (!Array.isArray(t.AMM_List)) {
+            t.AMM_List = t.Master_Task_ID && t.Master_Task_ID !== 'CÔNG VIỆC CA TRỰC' ? [t.Master_Task_ID] : [];
+          }
+          if (!Array.isArray(t.Pickslips)) t.Pickslips = [];
+          if (!Array.isArray(t.Borrowed_Tools)) t.Borrowed_Tools = [];
+        });
+      });
+      syncMasterDataFromAdminToAll();
+    }
+
+    function getMasterDataSource() {
+      if (!userWorkspaces['admin']) {
+        userWorkspaces['admin'] = createWorkspaceTemplate();
+      }
+      return userWorkspaces['admin'];
+    }
+
+    function syncMasterDataFromAdminToAll() {
+      const adminWs = getMasterDataSource();
+      const masterParts = JSON.parse(JSON.stringify(adminWs.partCatalog || DEFAULT_PART_CATALOG));
+      const master586 = JSON.parse(JSON.stringify(adminWs.form586Master || DEFAULT_FORM586_MASTER));
+      Object.keys(userWorkspaces).forEach(uname => {
+        if (uname !== 'admin' && userWorkspaces[uname]) {
+          userWorkspaces[uname].partCatalog = JSON.parse(JSON.stringify(masterParts));
+          userWorkspaces[uname].form586Master = JSON.parse(JSON.stringify(master586));
+        }
+      });
+    }
+
+    function saveSystemState() {
+      syncMasterDataFromAdminToAll();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ users, userWorkspaces }));
+      refreshGlobalDatalists();
+    }
+
+    function getActiveWorkspace() {
+      const target = currentUser ? currentUser.username : 'admin';
+      if (!userWorkspaces[target]) {
+        userWorkspaces[target] = createWorkspaceTemplate();
+      }
+      return userWorkspaces[target];
+    }
+
+    function refreshGlobalDatalists() {
+      const ws = getActiveWorkspace();
+      const masterSrc = getMasterDataSource();
+      const pnDl = document.getElementById('global-pn-datalist');
+      if (pnDl) {
+        pnDl.innerHTML = (masterSrc.partCatalog || []).map(p =>
+          `<option value="${escapeHtml(p.Part_Number)}">${escapeHtml(p.Part_Name)} (${escapeHtml(p.Unit || 'EA')} - ${escapeHtml(p.Part_Type || 'Consumable')})</option>`
+        ).join('');
+      }
+      const ammDl = document.getElementById('amm-master-datalist');
+      if (ammDl) {
+        ammDl.innerHTML = (ws.masterTasks || []).map(m =>
+          `<option value="${escapeHtml(m.Task_ID)}">${escapeHtml(m.Title)} (${escapeHtml(m.ATA)})</option>`
+        ).join('');
+      }
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const utcH = String(now.getUTCHours()).padStart(2, '0');
+      const utcM = String(now.getUTCMinutes()).padStart(2, '0');
+      const utcS = String(now.getUTCSeconds()).padStart(2, '0');
+      const utcD = String(now.getUTCDate()).padStart(2, '0');
+      const utcMo = String(now.getUTCMonth() + 1).padStart(2, '0');
+      const utcY = now.getUTCFullYear();
+
+      const vn = new Date(now.getTime() + 7 * 3600 * 1000);
+      const vnH = String(vn.getUTCHours()).padStart(2, '0');
+      const vnM = String(vn.getUTCMinutes()).padStart(2, '0');
+      const vnS = String(vn.getUTCSeconds()).padStart(2, '0');
+      const vnD = String(vn.getUTCDate()).padStart(2, '0');
+      const vnMo = String(vn.getUTCMonth() + 1).padStart(2, '0');
+      const vnY = vn.getUTCFullYear();
+
+      const elUtc = document.getElementById('clock-utc');
+      const elDateUtc = document.getElementById('date-utc');
+      const elVn = document.getElementById('clock-vn');
+      const elDateVn = document.getElementById('date-vn');
+
+      if (elUtc) elUtc.textContent = `${utcH}:${utcM}:${utcS}Z`;
+      if (elDateUtc) elDateUtc.textContent = `Ngày ${utcD}/${utcMo}/${utcY}`;
+      if (elVn) elVn.textContent = `${vnH}:${vnM}:${vnS}`;
+      if (elDateVn) elDateVn.textContent = `Ngày ${vnD}/${vnMo}/${vnY}`;
+
+      currentClockStamp = `${vnD}/${vnMo}/${vnY} ${vnH}:${vnM} (${utcH}:${utcM} UTC)`;
+    }
+
+    function formatVNDate(yyyyMmDd) {
+      if (!yyyyMmDd) return '';
+      const p = yyyyMmDd.split('-');
+      return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : yyyyMmDd;
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function showToast(title, msg) {
+      const box = document.getElementById('toast-box');
+      document.getElementById('toast-title').textContent = title;
+      document.getElementById('toast-msg').textContent = msg;
+      box.classList.remove('hidden');
+      setTimeout(() => box.classList.add('hidden'), 4000);
+    }
+
+    function openModal(id) {
+      if (id === 'modal-new-shift') {
+        document.getElementById('ns-date').value = new Date().toISOString().slice(0, 10);
+      }
+      if (id === 'modal-add-task') {
+        document.getElementById('at-title').value = '';
+        document.getElementById('at-reg').value = '';
+        document.getElementById('at-amm-input').value = '';
+        modalAmmChips = [];
+        renderModalAmmChips();
+      }
+      if (id === 'modal-create-user') {
+        document.getElementById('cu-staffid').value = generateNextMemberCode();
+      }
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function generateNextMemberCode() {
+      let maxNum = 1000;
+      users.forEach(u => {
+        const match = String(u.staffId || '').match(/(\d+)/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num >= 1000 && num > maxNum) maxNum = num;
+        }
+      });
+      return 'TV-' + (maxNum + 1);
+    }
+
+    function regenerateMemberCodeField() {
+      const rand = Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('cu-staffid').value = 'TV-' + rand;
+    }
+
+    // =========================================================
+    // ĐĂNG NHẬP & CHỈNH SỬA HỒ SƠ CÁ NHÂN
+    // =========================================================
+    function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('login-username').value.trim();
+      const p = document.getElementById('login-password').value.trim();
+      const errBox = document.getElementById('login-error');
+
+      const found = users.find(acc => acc.username.toLowerCase() === u.toLowerCase() && acc.password === p);
+      if (!found) {
+        errBox.textContent = 'Sai tên đăng nhập hoặc mật khẩu! Vui lòng kiểm tra lại.';
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      errBox.classList.add('hidden');
+      currentUser = found;
+
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('app-shell').classList.remove('hidden');
+
+      mainTab = found.role === 'admin' ? 'admin' : 'work';
+      renderAll();
+      showToast('Đăng nhập thành công!', `Xin chào ${found.fullName} (${found.staffId}).`);
+    }
+
+    function handleLogout() {
+      currentUser = null;
+      document.getElementById('login-password').value = '';
+      document.getElementById('app-shell').classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+    }
+
+    function openProfileModal() {
+      if (!currentUser) return;
+      document.getElementById('pf-username').value = currentUser.username;
+      document.getElementById('pf-fullname').value = currentUser.fullName;
+      document.getElementById('pf-staffid').value = currentUser.staffId;
+      document.getElementById('pf-password').value = '';
+      document.getElementById('pf-title').value = currentUser.title;
+      openModal('modal-profile');
+    }
+
+    function saveUserProfile() {
+      if (!currentUser) return;
+      const newFullName = document.getElementById('pf-fullname').value.trim();
+      const newStaffId = document.getElementById('pf-staffid').value.trim();
+      const newPass = document.getElementById('pf-password').value.trim();
+      const newTitle = document.getElementById('pf-title').value.trim();
+
+      if (!newFullName || !newStaffId) {
+        showToast('Thiếu thông tin!', 'Họ tên và Mã thành viên không được để trống.');
+        return;
+      }
+
+      currentUser.fullName = newFullName;
+      currentUser.staffId = newStaffId;
+      currentUser.title = newTitle || currentUser.title;
+      if (newPass) currentUser.password = newPass;
+
+      saveSystemState();
+      closeModal('modal-profile');
+      renderAll();
+      showToast('Đã lưu thông tin!', `Đã cập nhật hồ sơ của ${currentUser.fullName}.`);
+    }
+
+    function switchMainTab(tab) {
+      mainTab = tab;
+      renderAll();
+    }
+
+    // =========================================================
+    // HÀM RENDER TỔNG THỂ
+    // =========================================================
+    function renderAll() {
+      if (!currentUser) return;
+      saveSystemState();
+
+      document.getElementById('user-badge-name').textContent = `${currentUser.fullName} (${currentUser.staffId})`;
+      document.getElementById('user-badge-sub').textContent = `${currentUser.title} • Sửa thông tin`;
+
+      const ws = getActiveWorkspace();
+      const activeShift = ws.shifts.find(s => s.Shift_ID === ws.activeShiftId) || ws.shifts[0];
+      const shiftTasks = activeShift ? ws.dailyTasks.filter(t => t.Shift_ID === activeShift.Shift_ID) : [];
+      const doneMain = shiftTasks.filter(t => t.Status === 'Hoàn thành').length;
+
+      const navGrid = document.getElementById('nav-grid');
+      const navAdmin = document.getElementById('nav-admin');
+      if (currentUser.role === 'admin') {
+        navGrid.className = 'max-w-[1560px] mx-auto px-2 sm:px-6 py-2 grid grid-cols-2 sm:grid-cols-6 gap-2';
+        navAdmin.classList.remove('hidden');
+        navAdmin.classList.add('flex');
+      } else {
+        navGrid.className = 'max-w-[1560px] mx-auto px-2 sm:px-6 py-2 grid grid-cols-2 sm:grid-cols-5 gap-2';
+        navAdmin.classList.add('hidden');
+        navAdmin.classList.remove('flex');
+      }
+
+      const setNavClass = (id, active) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.className = `py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border transition ${
+          active
+            ? 'bg-[#C8102E] text-white border-[#C8102E] shadow-sm'
+            : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+        }`;
+      };
+
+      setNavClass('nav-work', mainTab === 'work');
+      setNavClass('nav-partnumber', mainTab === 'partnumber');
+      setNavClass('nav-warehouse', mainTab === 'warehouse');
+      setNavClass('nav-form586', mainTab === 'form586');
+      setNavClass('nav-dictionary', mainTab === 'dictionary');
+      if (currentUser.role === 'admin') {
+        setNavClass('nav-admin', mainTab === 'admin');
+      }
+
+      const masterSrc = getMasterDataSource();
+      const totalWarehousePending = (ws.partOrders || []).length + (ws.tempPickslips || []).length;
+
+      document.getElementById('nav-work').innerHTML = `<span>🛠 CA LÀM VIỆC (${doneMain}/${shiftTasks.length})</span>`;
+      document.getElementById('nav-partnumber').innerHTML = `<span>⚙ TRA PART NUMBER (${(masterSrc.partCatalog || []).length})</span>`;
+      document.getElementById('nav-warehouse').innerHTML = `<span>📦 ĐẶT VẬT TƯ KHO (${totalWarehousePending})</span>`;
+      document.getElementById('nav-form586').innerHTML = `<span>📋 FORM 586 (${ws.form586Logs.length})</span>`;
+      document.getElementById('nav-dictionary').innerHTML = `<span>📖 TỪ ĐIỂN (${ws.dictionary.length})</span>`;
+      if (currentUser.role === 'admin') {
+        document.getElementById('nav-admin').innerHTML = `<span>👑 QUẢN TRỊ VIÊN (${users.length} TV)</span>`;
+      }
+
+      const container = document.getElementById('main-container');
+      let pageContent = '';
+      if (mainTab === 'work') pageContent = renderWorkSectionHTML();
+      else if (mainTab === 'partnumber') pageContent = renderPartNumberSectionHTML();
+      else if (mainTab === 'warehouse') pageContent = renderWarehouseOrderSectionHTML();
+      else if (mainTab === 'form586') pageContent = renderForm586SectionHTML();
+      else if (mainTab === 'dictionary') pageContent = renderDictionarySectionHTML();
+      else if (mainTab === 'admin' && currentUser.role === 'admin') pageContent = renderAdminSectionHTML();
+
+      container.innerHTML = pageContent;
+    }
+
+    // =========================================================
+    // MỤC 1: CA LÀM VIỆC & THỰC THI CÔNG VIỆC
+    // =========================================================
+    function renderWorkSectionHTML() {
+      const ws = getActiveWorkspace();
+      const activeShift = ws.shifts.find(s => s.Shift_ID === ws.activeShiftId) || ws.shifts[0] || null;
+
+      if (!activeShift) {
+        return `
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 sm:p-12 text-center max-w-xl mx-auto my-6 space-y-4">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-100 text-[#C8102E] flex items-center justify-center shadow-sm">
+              <svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </div>
+            <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 uppercase">CHƯA CÓ CA LÀM VIỆC NÀO ĐANG MỞ</h2>
+            <p class="text-xs sm:text-sm text-slate-500 leading-relaxed">
+              Hiện tại bạn chưa bắt đầu ca làm việc nào. Hãy nhấn nút bên dưới để chọn ngày, giờ bắt đầu (24h) và địa điểm làm việc.
+            </p>
+            <div class="pt-2">
+              <button onclick="openModal('modal-new-shift')" class="bg-[#C8102E] hover:bg-red-800 text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-md transition active:scale-95">
+                + BẮT ĐẦU CA LÀM VIỆC MỚI
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      if (ws.activeShiftId !== activeShift.Shift_ID) {
+        ws.activeShiftId = activeShift.Shift_ID;
+      }
+
+      const shiftTasks = ws.dailyTasks.filter(t => t.Shift_ID === activeShift.Shift_ID);
+      const selectedTask = shiftTasks.find(t => t.ID === ws.selectedDailyTaskId) || shiftTasks[0] || null;
+
+      if (selectedTask && ws.selectedDailyTaskId !== selectedTask.ID) {
+        ws.selectedDailyTaskId = selectedTask.ID;
+      }
+
+      const doneMain = shiftTasks.filter(t => t.Status === 'Hoàn thành').length;
+      const totalMain = shiftTasks.length;
+      const doneSub = activeShift ? activeShift.Sub_Tasks.filter(st => st.done).length : 0;
+      const totalSub = activeShift ? activeShift.Sub_Tasks.length : 0;
+
+      const canFinishImmediately = totalMain === 0 || (doneMain === totalMain && doneSub === totalSub);
+      const isClosed = activeShift && activeShift.Status === 'Đã kết thúc';
+
+      const shiftOptions = ws.shifts.map(sh =>
+        `<option value="${sh.Shift_ID}" ${sh.Shift_ID === activeShift?.Shift_ID ? 'selected' : ''}>
+          Ngày ${formatVNDate(sh.Work_Date)} (${sh.Start_Hour}:${sh.Start_Min}) — ${escapeHtml(sh.Location)} [${sh.Status}]
+        </option>`
+      ).join('');
+
+      let hourOpts = '';
+      for (let h = 0; h < 24; h++) {
+        const hh = String(h).padStart(2, '0');
+        hourOpts += `<option value="${hh}" ${activeShift?.Start_Hour === hh ? 'selected' : ''}>${hh} giờ</option>`;
+      }
+      let minOpts = '';
+      for (let m = 0; m < 60; m++) {
+        const mm = String(m).padStart(2, '0');
+        minOpts += `<option value="${mm}" ${activeShift?.Start_Min === mm ? 'selected' : ''}>${mm} phút</option>`;
+      }
+
+      const mainTasksHTML = shiftTasks.length === 0
+        ? `<div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-300 p-4">
+            <p class="text-sm font-bold text-slate-600">Ca trực hiện không có công việc chính nào.</p>
+            <p class="text-xs text-slate-500 mt-1">Nếu ca trực không phát sinh việc, bạn có thể nhấn nút <strong>"Kết Thúc Ca Làm Việc"</strong> ngay ở góc trên.</p>
+           </div>`
+        : shiftTasks.map(t => {
+            const isSel = selectedTask && selectedTask.ID === t.ID;
+            const amms = Array.isArray(t.AMM_List) && t.AMM_List.length > 0 ? t.AMM_List : (t.Master_Task_ID && t.Master_Task_ID !== 'CÔNG VIỆC CA TRỰC' ? [t.Master_Task_ID] : []);
+            const psCount = Array.isArray(t.Pickslips) ? t.Pickslips.length : 0;
+            const unreturnedTools = (t.Borrowed_Tools || []).filter(tl => !tl.Returned).length;
+
+            return `
+              <div onclick="selectDailyTask('${t.ID}')" class="p-3.5 rounded-xl border cursor-pointer transition ${
+                isSel ? 'border-[#C8102E] bg-red-50/40 shadow-sm ring-1 ring-[#C8102E]' : 'border-slate-200 bg-white hover:border-slate-300'
+              }">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="bg-slate-900 text-[#F59E0B] font-bold text-xs px-2.5 py-0.5 rounded-lg">✈ ${escapeHtml(t.Aircraft_Reg)}</span>
+                    <span class="text-xs font-bold px-2.5 py-0.5 rounded-lg ${t.Status === 'Hoàn thành' ? 'bg-emerald-600 text-white' : 'bg-amber-100 text-amber-900'}">${t.Status}</span>
+                    ${unreturnedTools > 0 ? `<span class="bg-red-100 text-[#C8102E] text-[11px] font-bold px-2 py-0.5 rounded-lg">⚠ Nợ ${unreturnedTools} Tool</span>` : ''}
+                  </div>
+                  <button onclick="deleteDailyTask('${t.ID}', event)" class="text-slate-400 hover:text-red-600 font-bold px-1.5 text-xs" title="Xóa công việc này">✕</button>
+                </div>
+                <div class="font-bold text-sm text-slate-900 mt-2">${escapeHtml(t.Task_Title)}</div>
+                <div class="flex flex-wrap gap-1 mt-1.5">
+                  ${amms.length > 0
+                    ? amms.map(a => `<span class="bg-slate-100 text-slate-700 font-mono font-semibold text-[11px] px-2 py-0.5 rounded border border-slate-200">${escapeHtml(a)}</span>`).join('')
+                    : `<span class="text-[11px] text-slate-400 italic">Không gắn AMM</span>`
+                  }
+                </div>
+                <div class="flex items-center justify-between mt-3 pt-2 border-t border-slate-100 text-xs font-semibold text-slate-500">
+                  <span>Tiến độ: ${(t.Checked_Steps || []).length}/${(t.Custom_Steps || []).length} bước</span>
+                  <span>Pickslip: <strong class="text-slate-800">${psCount} phiếu</strong></span>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+      const subTasksHTML = !activeShift ? '' : activeShift.Sub_Tasks.map(st => `
+        <div class="p-2.5 rounded-xl border flex items-start justify-between gap-2 ${st.done ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200'}">
+          <label class="flex items-start gap-2.5 cursor-pointer flex-1">
+            <input type="checkbox" ${st.done ? 'checked' : ''} onchange="toggleSubTask('${st.id}')" class="w-4 h-4 mt-0.5 accent-[#C8102E] rounded cursor-pointer" />
+            <span class="text-xs sm:text-sm font-medium ${st.done ? 'line-through text-slate-400' : 'text-slate-800'}">${escapeHtml(st.text)}</span>
+          </label>
+          <div class="flex items-center gap-1 shrink-0">
+            <button onclick="editSubTaskPrompt('${st.id}')" class="text-slate-500 hover:text-slate-900 text-[11px] font-semibold px-2 py-0.5 bg-white border border-slate-200 rounded">Sửa</button>
+            <button onclick="deleteSubTask('${st.id}')" class="text-slate-400 hover:text-red-600 font-bold px-1.5 text-xs">✕</button>
+          </div>
+        </div>
+      `).join('');
+
+      let executionHTML = '';
+      if (!selectedTask) {
+        executionHTML = `
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
+            <h3 class="text-base font-bold text-slate-700">CHƯA CHỌN CÔNG VIỆC CHÍNH</h3>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1">Chọn một công việc bên cột trái hoặc nhấn <strong>"+ Thêm Việc"</strong> để bắt đầu.</p>
+          </div>
+        `;
+      } else {
+        const amms = Array.isArray(selectedTask.AMM_List) ? selectedTask.AMM_List : [];
+        const steps = selectedTask.Custom_Steps || [];
+
+        const stepsHTML = steps.map((stepTxt, idx) => {
+          const isChecked = (selectedTask.Checked_Steps || []).includes(idx);
+          return `
+            <div
+              ${isStepsUnlocked ? `draggable="true" ondragstart="onStepDragStart(event, ${idx})" ondragover="onStepDragOver(event)" ondrop="onStepDrop(event, ${idx})"` : ''}
+              class="p-3 rounded-xl border flex items-start justify-between gap-3 transition ${
+                isChecked ? 'bg-emerald-50/60 border-emerald-300' : 'bg-slate-50/70 border-slate-200 hover:border-slate-300'
+              } ${isStepsUnlocked ? 'cursor-move border-dashed border-amber-400 bg-amber-50/30' : 'cursor-pointer'}"
+              onclick="${!isStepsUnlocked ? `toggleStepCheck(${idx})` : ''}"
+            >
+              <div class="flex items-start gap-2.5 flex-1">
+                ${isStepsUnlocked
+                  ? `<span class="text-amber-600 font-bold text-xs px-1.5 py-0.5 bg-amber-100 rounded select-none" title="Kéo thả để đổi thứ tự">☰ #${idx + 1}</span>`
+                  : `<input type="checkbox" ${isChecked ? 'checked' : ''} class="w-4 h-4 mt-0.5 accent-[#C8102E] rounded pointer-events-none shrink-0" />`
+                }
+                <span class="text-xs sm:text-sm font-medium leading-relaxed ${isChecked ? 'line-through text-slate-400' : 'text-slate-800'}">
+                  <strong class="text-slate-900">Bước ${idx + 1}:</strong> ${escapeHtml(stepTxt)}
+                </span>
+              </div>
+              ${isStepsUnlocked ? `
+                <div class="flex items-center gap-1 shrink-0">
+                  <button type="button" onclick="moveStepOrder(${idx}, -1, event)" ${idx === 0 ? 'disabled' : ''} class="px-2 py-0.5 bg-white border border-slate-300 rounded text-xs font-bold disabled:opacity-30">▲</button>
+                  <button type="button" onclick="moveStepOrder(${idx}, 1, event)" ${idx === steps.length - 1 ? 'disabled' : ''} class="px-2 py-0.5 bg-white border border-slate-300 rounded text-xs font-bold disabled:opacity-30">▼</button>
+                  <button type="button" onclick="deleteStepFromTask(${idx}, event)" class="px-2 py-0.5 bg-red-50 hover:bg-red-100 text-[#C8102E] border border-red-200 rounded text-xs font-bold">✕</button>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+
+        // DANH SÁCH PICKSLIP THU GỌN CÓ CUỘN
+        const allPickslips = selectedTask.Pickslips || [];
+        const qPs = pickslipSearchQuery.trim().toLowerCase();
+        const filteredPickslips = allPickslips.filter(ps =>
+          !qPs ||
+          ps.Pickslip_No.toLowerCase().includes(qPs) ||
+          (ps.Items || []).some(it => it.Part_Number.toLowerCase().includes(qPs) || it.Part_Name.toLowerCase().includes(qPs))
+        );
+
+        const pickslipsHTML = filteredPickslips.length === 0
+          ? `<div class="text-center py-5 bg-slate-50 rounded-xl border border-dashed border-slate-300 text-xs text-slate-500">
+              ${qPs ? `Không tìm thấy phiếu Pickslip nào khớp với "${escapeHtml(pickslipSearchQuery)}".` : 'Chưa có phiếu Pickslip nào. Nhấn "+ Tạo Phiếu Pickslip" khi cần lĩnh vật tư.'}
+             </div>`
+          : filteredPickslips.map((ps, psIdx) => {
+              const isExpanded = expandedPickslipId === ps.id;
+              const itemCount = (ps.Items || []).length;
+              return `
+                <div class="border border-slate-200 rounded-xl bg-white overflow-hidden">
+                  <!-- Thanh tiêu đề thu gọn của Pickslip -->
+                  <div onclick="toggleExpandPickslip('${ps.id}')" class="p-3 bg-slate-50 hover:bg-slate-100 cursor-pointer flex flex-wrap items-center justify-between gap-2 transition">
+                    <div class="flex items-center gap-2">
+                      <span class="bg-[#C8102E] text-white font-bold px-2 py-0.5 rounded text-[11px]">#${psIdx + 1}</span>
+                      <span class="font-mono font-bold text-sm text-slate-900">${escapeHtml(ps.Pickslip_No)}</span>
+                      <span class="text-[11px] text-slate-500 font-medium">• Ngày tạo: ${escapeHtml(ps.Created_At || 'Hôm nay')}</span>
+                      <span class="bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full text-[11px]">${itemCount} vật tư</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-semibold text-[#C8102E]">${isExpanded ? '▲ Thu gọn' : '▼ Xem chi tiết'}</span>
+                      <button onclick="deletePickslipFromTask('${ps.id}', event)" class="text-slate-400 hover:text-red-600 font-bold px-1.5 text-xs" title="Xóa phiếu này">✕</button>
+                    </div>
+                  </div>
+
+                  <!-- Nội dung chi tiết chỉ hiển thị khi bấm vào -->
+                  ${isExpanded ? `
+                    <div class="p-3.5 border-t border-slate-200 space-y-3 bg-white">
+                      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2.5">
+                        <div class="text-xs font-bold text-slate-700">+ Thêm Vật Tư Vào Phiếu [${escapeHtml(ps.Pickslip_No)}] (Chưa cần nhập SL xài)</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                          <div class="sm:col-span-3">
+                            <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Số Part Number (P/N) *</label>
+                            <input id="mat-pn-${ps.id}" type="text" list="global-pn-datalist" oninput="onPickslipPNInput('${ps.id}', this.value)" placeholder="VD: MS24665-355" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold" />
+                          </div>
+                          <div class="sm:col-span-4">
+                            <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Tên Vật Tư / Phụ Tùng *</label>
+                            <input id="mat-name-${ps.id}" type="text" placeholder="Tên vật tư..." class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold" />
+                          </div>
+                          <div class="sm:col-span-1">
+                            <label class="block text-[10px] font-bold text-slate-500 mb-0.5">ĐVT *</label>
+                            <input id="mat-unit-${ps.id}" type="text" value="EA" class="w-full bg-white border border-slate-300 rounded-lg px-1.5 py-1.5 text-xs font-bold text-center" />
+                          </div>
+                          <div class="sm:col-span-2">
+                            <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Loại Vật Tư *</label>
+                            <select id="mat-type-${ps.id}" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-semibold">
+                              <option value="Consumable">Consumable</option>
+                              <option value="Rotable">Rotable</option>
+                            </select>
+                          </div>
+                          <div class="sm:col-span-2">
+                            <label class="block text-[10px] font-bold text-slate-500 mb-0.5">SL Lĩnh (Lấy) *</label>
+                            <input id="mat-lay-${ps.id}" type="number" min="1" value="1" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-center" />
+                          </div>
+                        </div>
+                        <div class="flex justify-end">
+                          <button type="button" onclick="addMaterialToPickslip('${ps.id}')" class="bg-[#C8102E] hover:bg-red-800 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs shadow-sm">
+                            + Lưu Vật Tư Vào Phiếu
+                          </button>
+                        </div>
+                      </div>
+
+                      ${itemCount === 0
+                        ? `<div class="text-xs text-slate-400 italic text-center py-2">Chưa có vật tư nào trong phiếu này.</div>`
+                        : `<div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                              <thead>
+                                <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                                  <th class="p-2">Part Number</th>
+                                  <th class="p-2">Tên Vật Tư</th>
+                                  <th class="p-2 text-center">ĐVT</th>
+                                  <th class="p-2 text-center">Loại Hàng</th>
+                                  <th class="p-2 text-center">SL Lấy</th>
+                                  <th class="p-2 text-center">SL Xài (Khi xong)</th>
+                                  <th class="p-2 text-center">Return</th>
+                                  <th class="p-2 text-right">Xóa</th>
+                                </tr>
+                              </thead>
+                              <tbody class="divide-y divide-slate-100">
+                                ${(ps.Items || []).map(m => {
+                                  const ret = Math.max(0, (Number(m.SL_Lay) || 0) - (Number(m.SL_Da_Dung) || 0));
+                                  return `
+                                    <tr>
+                                      <td class="p-2 font-mono font-bold text-[#C8102E]">${escapeHtml(m.Part_Number)}</td>
+                                      <td class="p-2 font-medium text-slate-800">${escapeHtml(m.Part_Name)}</td>
+                                      <td class="p-2 text-center font-semibold">${escapeHtml(m.Unit || 'EA')}</td>
+                                      <td class="p-2 text-center">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.Part_Type === 'Rotable' ? 'bg-red-50 text-[#C8102E] border border-red-200' : 'bg-amber-50 text-amber-900 border border-amber-200'}">${escapeHtml(m.Part_Type || 'Consumable')}</span>
+                                      </td>
+                                      <td class="p-2 text-center">
+                                        <input type="number" min="1" value="${m.SL_Lay}" onchange="updatePickslipItemQty('${ps.id}', '${m.id}', 'SL_Lay', this.value)" class="w-12 bg-slate-50 border border-slate-300 rounded px-1 py-0.5 text-center font-bold" />
+                                      </td>
+                                      <td class="p-2 text-center">
+                                        <input type="number" min="0" value="${m.SL_Da_Dung || 0}" onchange="updatePickslipItemQty('${ps.id}', '${m.id}', 'SL_Da_Dung', this.value)" class="w-12 bg-amber-50 border border-amber-300 rounded px-1 py-0.5 text-center font-bold" />
+                                      </td>
+                                      <td class="p-2 text-center">
+                                        <span class="px-2 py-0.5 rounded-full font-bold ${ret > 0 ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800'}">${ret}</span>
+                                      </td>
+                                      <td class="p-2 text-right">
+                                        <button onclick="deletePickslipItem('${ps.id}', '${m.id}')" class="text-slate-400 hover:text-red-600 font-bold">✕</button>
+                                      </td>
+                                    </tr>
+                                  `;
+                                }).join('')}
+                              </tbody>
+                            </table>
+                          </div>`
+                      }
+                    </div>
+                  ` : ''}
+                </div>
+              `;
+            }).join('');
+
+        // MỤC MƯỢN TOOL RIÊNG BIỆT (NHẮC TRẢ TOOL)
+        const tools = selectedTask.Borrowed_Tools || [];
+        const unreturnedCount = tools.filter(tl => !tl.Returned).length;
+        const toolsHTML = tools.length === 0
+          ? `<div class="text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-300 text-xs text-slate-500">
+              Chưa có dụng cụ/Tool mượn nào trong công việc này.
+             </div>`
+          : tools.map(tl => `
+              <div class="p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${tl.Returned ? 'bg-emerald-50/50 border-emerald-200' : 'bg-red-50/50 border-red-200'}">
+                <div class="space-y-0.5">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-xs sm:text-sm ${tl.Returned ? 'line-through text-slate-400' : 'text-slate-900'}">${escapeHtml(tl.Tool_Name)}</span>
+                    ${tl.Part_Or_Serial ? `<span class="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-slate-200 font-bold text-[#C8102E]">S/N: ${escapeHtml(tl.Part_Or_Serial)}</span>` : ''}
+                    <span class="text-xs font-bold text-slate-600">SL: ${tl.Qty || 1}</span>
+                  </div>
+                  <div class="text-[11px] text-slate-500">
+                    Mượn lúc: ${escapeHtml(tl.Borrowed_At || '--:--')} ${tl.Note ? `• Lưu ý: <strong class="text-slate-700">${escapeHtml(tl.Note)}</strong>` : ''}
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button onclick="toggleReturnBorrowedTool('${tl.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    tl.Returned ? 'bg-emerald-600 text-white' : 'bg-[#F59E0B] hover:bg-amber-400 text-slate-950 shadow-sm'
+                  }">
+                    ${tl.Returned ? '✓ Đã Trả Kho Tool' : '⚠ Xác Nhận Đã Trả Tool'}
+                  </button>
+                  <button onclick="deleteBorrowedTool('${tl.id}')" class="text-slate-400 hover:text-red-600 font-bold px-1.5">✕</button>
+                </div>
+              </div>
+            `).join('');
+
+        executionHTML = `
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden space-y-6">
+            <!-- Header Task -->
+            <div class="bg-slate-900 text-white p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-4 border-[#F59E0B]">
+              <div class="flex-1 space-y-2">
+                <input type="text" value="${escapeHtml(selectedTask.Task_Title)}" onchange="updateSelectedTaskField('Task_Title', this.value)" class="w-full bg-transparent text-base sm:text-lg font-bold text-white border-b border-slate-700 focus:border-[#F59E0B] focus:outline-none" />
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="text-[11px] text-slate-400 font-semibold">Mã AMM:</span>
+                  ${amms.map((a, aIdx) => `
+                    <span class="bg-slate-800 text-[#F59E0B] font-mono text-xs font-bold px-2.5 py-0.5 rounded-lg border border-slate-700 flex items-center gap-1">
+                      ${escapeHtml(a)}
+                      <button onclick="removeAmmFromSelectedTask(${aIdx})" class="text-slate-400 hover:text-red-400">✕</button>
+                    </span>
+                  `).join('')}
+                  <div class="inline-flex items-center gap-1">
+                    <input id="inline-add-amm" type="text" list="amm-master-datalist" placeholder="+ Thêm mã AMM..." class="bg-slate-800 text-white text-xs font-mono px-2.5 py-1 rounded-lg border border-slate-700 w-36 focus:outline-none" />
+                    <button onclick="addAmmToSelectedTask()" class="bg-[#F59E0B] text-slate-950 font-bold text-xs px-2 py-1 rounded-lg">+</button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold uppercase text-amber-300 mb-0.5">Tàu bay (Đăng bạ)</label>
+                <input type="text" value="${escapeHtml(selectedTask.Aircraft_Reg)}" onchange="updateSelectedTaskField('Aircraft_Reg', this.value)" class="w-32 bg-[#F59E0B] text-slate-950 rounded-xl px-3 py-1.5 text-center font-extrabold text-sm shadow" />
+              </div>
+            </div>
+
+            <div class="p-4 sm:p-6 space-y-6">
+              <!-- 1. CÁC BƯỚC THỰC HIỆN (CÓ NÚT MỞ KHÓA ĐỂ KÉO THẢ & XÓA, LƯU CHO LẦN SAU) -->
+              <div class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 class="font-bold text-sm sm:text-base text-slate-900">
+                      1. Các Bước Thực Hiện (${(selectedTask.Checked_Steps || []).length}/${steps.length} bước)
+                    </h4>
+                    <p class="text-xs text-slate-500">Nhấn nút Mở khóa bên phải nếu cần kéo thả đổi thứ tự hoặc xóa bước (tự động lưu cho lần sau).</p>
+                  </div>
+                  <button onclick="toggleUnlockSteps()" class="px-3 py-1.5 rounded-xl font-bold text-xs border transition ${
+                    isStepsUnlocked
+                      ? 'bg-[#F59E0B] text-slate-950 border-amber-500 shadow-sm'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                  }">
+                    ${isStepsUnlocked ? '🔓 Đang Mở Khóa Sắp Xếp (Nhấn Để Khóa & Lưu)' : '🔒 Mở Khóa Đổi Thứ Tự / Xóa Bước'}
+                  </button>
+                </div>
+
+                <div class="space-y-2">${stepsHTML}</div>
+
+                <div class="flex gap-2 pt-1">
+                  <input id="new-step-input" type="text" placeholder="Nhập bước thực hiện mới..." onkeydown="if(event.key==='Enter') addCustomStepToTask()" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#C8102E]" />
+                  <button onclick="addCustomStepToTask()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-xl text-xs sm:text-sm shrink-0">+ Thêm Bước</button>
+                </div>
+              </div>
+
+              <!-- 2. QUẢN LÝ PHIẾU LĨNH VẬT TƯ (PICKSLIP - CUỘN GỌN & TÌM KIẾM) -->
+              <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200">
+                  <div>
+                    <h4 class="font-bold text-sm sm:text-base text-slate-900">
+                      2. Quản Lý Phiếu Lĩnh Vật Tư (Pickslip - ${allPickslips.length} phiếu)
+                    </h4>
+                    <p class="text-xs text-slate-500">Nhấn vào từng phiếu để mở chi tiết vật tư. Khung có chế độ cuộn gọn gàng.</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <input id="ps-search-input" type="text" value="${escapeHtml(pickslipSearchQuery)}" oninput="onPickslipSearchInput(this.value)" placeholder="🔍 Tìm số Pickslip, P/N..." class="bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-semibold w-44 focus:outline-none focus:border-[#C8102E]" />
+                    <button onclick="openCreatePickslipModal()" class="bg-[#C8102E] hover:bg-red-800 text-white font-bold px-3.5 py-2 rounded-xl text-xs shrink-0 shadow-sm">
+                      + Tạo Phiếu Pickslip
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Vùng cuộn danh sách Pickslip -->
+                <div id="pickslip-scroll-container" class="max-h-96 overflow-y-auto space-y-2 pr-1">
+                  ${pickslipsHTML}
+                </div>
+              </div>
+
+              <!-- 3. MỤC MƯỢN TOOL RIÊNG (LƯU Ý ĐỂ TRẢ TOOL) -->
+              <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200">
+                  <div>
+                    <h4 class="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                      <span>3. Sổ Mượn Dụng Cụ / Tool Đặc Chủng</span>
+                      ${unreturnedCount > 0
+                        ? `<span class="bg-[#C8102E] text-white text-xs font-bold px-2.5 py-0.5 rounded-full">Đang mượn ${unreturnedCount} Tool chưa trả</span>`
+                        : `<span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full">Đã trả đủ Tool</span>`
+                      }
+                    </h4>
+                    <p class="text-xs text-slate-500">Ghi nhận các dụng cụ mượn kho để theo dõi và nhắc trả trước khi kết thúc ca.</p>
+                  </div>
+                </div>
+
+                <!-- Form thêm Tool mượn có chú thích rõ -->
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 bg-white p-3 rounded-xl border border-slate-200">
+                  <div class="sm:col-span-4">
+                    <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Tên Dụng Cụ / Tool Mượn *</label>
+                    <input id="tool-name-input" type="text" placeholder="VD: Cờ lê lực 100-400 Nm..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold" />
+                  </div>
+                  <div class="sm:col-span-3">
+                    <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Mã P/N hoặc Serial Tool</label>
+                    <input id="tool-sn-input" type="text" placeholder="VD: TW-092" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-mono font-semibold" />
+                  </div>
+                  <div class="sm:col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-500 mb-0.5">SL</label>
+                    <input id="tool-qty-input" type="number" min="1" value="1" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-1.5 py-1.5 text-xs font-bold text-center" />
+                  </div>
+                  <div class="sm:col-span-4">
+                    <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Ghi chú mượn / Hạn trả</label>
+                    <div class="flex gap-1.5">
+                      <input id="tool-note-input" type="text" placeholder="Lưu ý trả kho..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs" />
+                      <button onclick="addBorrowedToolToTask()" class="bg-[#F59E0B] hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs shrink-0">+ Mượn</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  ${toolsHTML}
+                </div>
+              </div>
+
+              <!-- NÚT HOÀN THÀNH TASK (CHỈ HOÀN THÀNH, KHI CÓ AMM KHỚP FORM 586 MỚI HỎI) -->
+              <div class="pt-2 flex justify-end border-t border-slate-200">
+                <button onclick="completeCurrentTaskOnly()" class="w-full sm:w-auto bg-[#C8102E] hover:bg-red-800 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition active:scale-95">
+                  ✓ HOÀN THÀNH CÔNG VIỆC NÀY
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="space-y-6">
+          <!-- THANH QUẢN LÝ CA LÀM VIỆC -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 space-y-4">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div class="space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="bg-[#C8102E] text-white text-xs font-bold uppercase px-2.5 py-0.5 rounded-lg">CA LÀM VIỆC</span>
+                  <span class="text-xs font-bold px-3 py-0.5 rounded-full ${isClosed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}">
+                    ${activeShift ? activeShift.Status : 'Đang làm việc'}
+                  </span>
+                </div>
+                  <div class="flex flex-wrap items-center gap-2 pt-1">
+                  <select onchange="selectShift(this.value)" class="bg-slate-900 text-white font-bold text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border border-slate-700 focus:outline-none">
+                    ${shiftOptions}
+                  </select>
+                  <button onclick="openModal('modal-new-shift')" class="bg-[#F59E0B] hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-xl shadow-sm transition">
+                    + Bắt Đầu Ca Mới
+                  </button>
+                  <button onclick="deleteCurrentShift()" class="text-xs font-semibold text-slate-400 hover:text-red-600 px-2 py-1">Xóa ca này</button>
+                </div>
+              </div>
+
+              <div>
+                ${isClosed ? `
+                  <div class="flex items-center gap-3 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-2">
+                    <div>
+                      <div class="text-xs font-bold text-emerald-900">ĐÃ KẾT THÚC CA LÀM VIỆC</div>
+                      <div class="text-[11px] text-emerald-700">Lúc: ${escapeHtml(activeShift.Ended_At)}</div>
+                    </div>
+                    <button onclick="reopenCurrentShift()" class="bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs px-3 py-1.5 rounded-lg border border-slate-300">Mở Lại Ca</button>
+                  </div>
+                ` : `
+                  <button onclick="finishCurrentShift()" class="px-5 py-3 rounded-xl font-bold text-xs sm:text-sm shadow-sm transition ${
+                    canFinishImmediately ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300'
+                  }">
+                    ${totalMain === 0
+                      ? '✓ KẾT THÚC CA LÀM VIỆC (CA KHÔNG PHÁT SINH VIỆC)'
+                      : canFinishImmediately
+                      ? '✓ KẾT THÚC CA LÀM VIỆC (ĐÃ XONG 100%)'
+                      : `KẾT THÚC CA (Còn ${totalMain - doneMain} việc chính, ${totalSub - doneSub} việc vào/ra ca)`}
+                  </button>
+                `}
+              </div>
+            </div>
+
+            ${activeShift ? `
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-500 mb-1">Ngày Làm Việc</label>
+                  <input type="date" value="${activeShift.Work_Date}" onchange="updateShiftField('Work_Date', this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-sm font-semibold" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-500 mb-1">Giờ Bắt Đầu (00 - 23h)</label>
+                  <div class="grid grid-cols-2 gap-2">
+                    <select onchange="updateShiftField('Start_Hour', this.value)" class="bg-slate-50 border border-slate-300 rounded-xl px-2 py-1.5 text-sm font-semibold">${hourOpts}</select>
+                    <select onchange="updateShiftField('Start_Min', this.value)" class="bg-slate-50 border border-slate-300 rounded-xl px-2 py-1.5 text-sm font-semibold">${minOpts}</select>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-500 mb-1">Địa Điểm Làm Việc</label>
+                  <input type="text" value="${escapeHtml(activeShift.Location)}" onchange="updateShiftField('Location', this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-sm font-semibold" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-500 mb-1">Ghi Chú Ca</label>
+                  <input type="text" value="${escapeHtml(activeShift.Note || '')}" onchange="updateShiftField('Note', this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-sm" />
+                </div>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div class="lg:col-span-5 space-y-6">
+              <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-[#C8102E] text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+                  <div>
+                    <h3 class="font-bold text-sm sm:text-base">CÔNG VIỆC CHÍNH (${doneMain}/${totalMain})</h3>
+                    <p class="text-[11px] text-red-100">Chọn công việc để thực thi, quản lý Pickslip & Tool mượn</p>
+                  </div>
+                  <button onclick="openModal('modal-add-task')" class="bg-[#F59E0B] hover:bg-amber-400 text-slate-950 font-bold text-xs px-3 py-2 rounded-xl shadow-sm">
+                    + Thêm Việc
+                  </button>
+                </div>
+                <div class="p-3.5 space-y-2.5">${mainTasksHTML}</div>
+              </div>
+
+              <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-800 text-white p-3.5 px-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+                  <h3 class="font-bold text-sm">VIỆC CẦN LÀM TRƯỚC KHI VÀO / RA CA (${doneSub}/${totalSub})</h3>
+                </div>
+                <div class="p-3.5 space-y-2">
+                  ${subTasksHTML}
+                  <div class="flex gap-2 pt-2">
+                    <input id="new-subtask-input" type="text" placeholder="Thêm việc đầu/cuối ca..." onkeydown="if(event.key==='Enter') addSubTask()" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none" />
+                    <button onclick="addSubTask()" class="bg-slate-800 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs">+ Thêm</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="lg:col-span-7">${executionHTML}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================
+    // HÀM XỬ LÝ TRONG CA LÀM VIỆC & KÉO THẢ BƯỚC
+    // =========================================================
+    function selectShift(shiftId) {
+      const ws = getActiveWorkspace();
+      ws.activeShiftId = shiftId;
+      const tasks = ws.dailyTasks.filter(t => t.Shift_ID === shiftId);
+      ws.selectedDailyTaskId = tasks[0] ? tasks[0].ID : null;
+      renderAll();
+    }
+
+    function updateShiftField(field, val) {
+      const ws = getActiveWorkspace();
+      const sh = ws.shifts.find(s => s.Shift_ID === ws.activeShiftId);
+      if (!sh) return;
+      sh[field] = val;
+      saveSystemState();
+      renderAll();
+    }
+
+    function createNewShift() {
+      const ws = getActiveWorkspace();
+      const date = document.getElementById('ns-date').value || new Date().toISOString().slice(0, 10);
+      const hour = document.getElementById('ns-hour').value || '08';
+      const min = document.getElementById('ns-min').value || '00';
+      const loc = document.getElementById('ns-loc').value.trim() || 'Sân đỗ tàu bay';
+      const note = document.getElementById('ns-note').value.trim();
+
+      const newShift = {
+        Shift_ID: 'SHIFT-' + Date.now(),
+        Work_Date: date,
+        Start_Hour: hour,
+        Start_Min: min,
+        Location: loc,
+        Note: note,
+        Status: 'Đang làm việc',
+        Ended_At: '',
+        Sub_Tasks: [
+          { id: 'st-' + Date.now() + '-1', text: 'Nhận bàn giao bộ đàm và kiểm tra dụng cụ đầu ca', done: false },
+          { id: 'st-' + Date.now() + '-2', text: 'Kiểm tra FOD khu vực sân đỗ tàu bay trước và sau bảo dưỡng', done: false },
+          { id: 'st-' + Date.now() + '-3', text: 'Kiểm đếm đủ dụng cụ (Tool Check) và ký sổ bàn giao trước khi ra ca', done: false }
+        ]
+      };
+
+      ws.shifts.unshift(newShift);
+      ws.activeShiftId = newShift.Shift_ID;
+      ws.selectedDailyTaskId = null;
+      closeModal('modal-new-shift');
+      renderAll();
+      showToast('Đã bắt đầu Ca mới!', `Ca ngày ${formatVNDate(date)} (${hour}:${min}) tại ${loc}.`);
+    }
+
+    function deleteCurrentShift() {
+      const ws = getActiveWorkspace();
+      const targetId = ws.activeShiftId;
+      if (!targetId) return;
+      ws.shifts = ws.shifts.filter(s => s.Shift_ID !== targetId);
+      ws.dailyTasks = ws.dailyTasks.filter(t => t.Shift_ID !== targetId);
+      ws.activeShiftId = ws.shifts[0] ? ws.shifts[0].Shift_ID : null;
+      ws.selectedDailyTaskId = null;
+      renderAll();
+    }
+
+    function finishCurrentShift() {
+      const ws = getActiveWorkspace();
+      const sh = ws.shifts.find(s => s.Shift_ID === ws.activeShiftId);
+      if (!sh) return;
+      const sTasks = ws.dailyTasks.filter(t => t.Shift_ID === sh.Shift_ID);
+      const pendingMain = sTasks.filter(t => t.Status !== 'Hoàn thành').length;
+      const pendingSub = sh.Sub_Tasks.filter(st => !st.done).length;
+
+      if (sTasks.length > 0 && (pendingMain > 0 || pendingSub > 0)) {
+        showToast('Chưa hoàn tất công việc!', `Còn ${pendingMain} việc chính và ${pendingSub} việc vào/ra ca chưa hoàn thành.`);
+        return;
+      }
+
+      if (sTasks.length === 0) {
+        sh.Sub_Tasks.forEach(st => st.done = true);
+      }
+      sh.Status = 'Đã kết thúc';
+      sh.Ended_At = currentClockStamp;
+      renderAll();
+      showToast('Đã kết thúc Ca làm việc!', `Đã khóa sổ ca ngày ${formatVNDate(sh.Work_Date)}.`);
+    }
+
+    function reopenCurrentShift() {
+      const ws = getActiveWorkspace();
+      const sh = ws.shifts.find(s => s.Shift_ID === ws.activeShiftId);
+      if (!sh) return;
+      sh.Status = 'Đang làm việc';
+      sh.Ended_At = '';
+      renderAll();
+    }
+
+    // Thêm nhiều AMM trong Modal Thêm Việc
+    function onModalAmmInputHint(val) {
+      const ws = getActiveWorkspace();
+      const found = ws.masterTasks.find(m => m.Task_ID.toLowerCase() === val.trim().toLowerCase());
+      const titleInput = document.getElementById('at-title');
+      if (found && !titleInput.value.trim()) {
+        titleInput.value = found.Title;
+      }
+    }
+
+    function addAmmChipToModal() {
+      const inp = document.getElementById('at-amm-input');
+      const val = inp.value.trim();
+      if (!val) return;
+      if (!modalAmmChips.includes(val)) {
+        modalAmmChips.push(val);
+        onModalAmmInputHint(val);
+      }
+      inp.value = '';
+      renderModalAmmChips();
+    }
+
+    function removeAmmChipFromModal(idx) {
+      modalAmmChips.splice(idx, 1);
+      renderModalAmmChips();
+    }
+
+    function renderModalAmmChips() {
+      const box = document.getElementById('at-amm-chips');
+      if (!box) return;
+      box.innerHTML = modalAmmChips.map((a, idx) => `
+        <span class="bg-slate-800 text-[#F59E0B] font-mono text-xs font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+          ${escapeHtml(a)}
+          <button type="button" onclick="removeAmmChipFromModal(${idx})" class="text-white hover:text-red-300 font-bold">✕</button>
+        </span>
+      `).join('');
+    }
+
+    function addDailyTaskToShift() {
+      const ws = getActiveWorkspace();
+      const sh = ws.shifts.find(s => s.Shift_ID === ws.activeShiftId);
+      if (!sh) return;
+
+      const pendingAmmInput = document.getElementById('at-amm-input').value.trim();
+      if (pendingAmmInput && !modalAmmChips.includes(pendingAmmInput)) {
+        modalAmmChips.push(pendingAmmInput);
+      }
+
+      let title = document.getElementById('at-title').value.trim();
+      const reg = document.getElementById('at-reg').value.trim();
+
+      const primaryAmm = modalAmmChips[0] || '';
+      const mTask = primaryAmm ? ws.masterTasks.find(m => m.Task_ID.toLowerCase() === primaryAmm.toLowerCase()) : null;
+      if (!title && mTask) title = mTask.Title;
+
+      if (!title) {
+        showToast('Thiếu nội dung công việc!', 'Vui lòng nhập Nội dung công việc làm gì.');
+        return;
+      }
+      if (!reg) {
+        showToast('Thiếu số tàu bay!', 'Vui lòng nhập Số đăng bạ tàu bay.');
+        return;
+      }
+
+      const stepsToUse = mTask
+        ? [...mTask.Steps]
+        : [
+            'Đảm bảo an toàn tàu bay và chuẩn bị dụng cụ, tài liệu liên quan.',
+            `Thực hiện công việc: ${title}`,
+            'Kiểm tra khu vực làm việc (FOD Check) và ký xác nhận hoàn thành.'
+          ];
+
+      const newTask = {
+        ID: 'DT-' + Date.now().toString().slice(-4),
+        Shift_ID: sh.Shift_ID,
+        Master_Task_ID: primaryAmm || 'CÔNG VIỆC CA TRỰC',
+        AMM_List: [...modalAmmChips],
+        Task_Title: title,
+        Aircraft_Reg: reg,
+        Status: 'Đang thực hiện',
+        Checked_Steps: [],
+        Custom_Steps: stepsToUse,
+        Pickslips: [],
+        Borrowed_Tools: []
+      };
+
+      ws.dailyTasks.unshift(newTask);
+      ws.selectedDailyTaskId = newTask.ID;
+      closeModal('modal-add-task');
+      renderAll();
+      showToast('Đã thêm công việc vào Ca!', `Đã thêm "${title}" cho tàu ${reg}.`);
+    }
+
+    function selectDailyTask(taskId) {
+      const ws = getActiveWorkspace();
+      ws.selectedDailyTaskId = taskId;
+      renderAll();
+    }
+
+    function deleteDailyTask(taskId, e) {
+      if (e) e.stopPropagation();
+      const ws = getActiveWorkspace();
+      ws.dailyTasks = ws.dailyTasks.filter(t => t.ID !== taskId);
+      if (ws.selectedDailyTaskId === taskId) {
+        const remain = ws.dailyTasks.filter(t => t.Shift_ID === ws.activeShiftId);
+        ws.selectedDailyTaskId = remain[0] ? remain[0].ID : null;
+      }
+      renderAll();
+    }
+
+    function updateSelectedTaskField(field, val) {
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+      t[field] = val;
+      renderAll();
+    }
+
+    function addAmmToSelectedTask() {
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      const inp = document.getElementById('inline-add-amm');
+      if (!t || !inp || !inp.value.trim()) return;
+      const val = inp.value.trim();
+      if (!Array.isArray(t.AMM_List)) t.AMM_List = [];
+      if (!t.AMM_List.includes(val)) {
+        t.AMM_List.push(val);
+        if (!t.Master_Task_ID || t.Master_Task_ID === 'CÔNG VIỆC CA TRỰC') {
+          t.Master_Task_ID = val;
+        }
+      }
+      renderAll();
+    }
+
+    function removeAmmFromSelectedTask(idx) {
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t || !Array.isArray(t.AMM_List)) return;
+      t.AMM_List.splice(idx, 1);
+      t.Master_Task_ID = t.AMM_List[0] || 'CÔNG VIỆC CA TRỰC';
+      renderAll();
+    }
+
+    // KÉO THẢ & XÓA BƯỚC THỰC HIỆN (LƯU CHO NHỮNG LẦN SAU)
+    function toggleUnlockSteps() {
+      isStepsUnlocked = !isStepsUnlocked;
+      renderAll();
+      if (!isStepsUnlocked) {
+        persistTaskStepsToMaster();
+        showToast('Đã khóa & Lưu thứ tự bước!', 'Thứ tự các bước thực hiện đã được lưu lại cho những lần sau.');
+      }
+    }
+
+    function persistTaskStepsToMaster() {
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+      const amms = Array.isArray(t.AMM_List) && t.AMM_List.length > 0 ? t.AMM_List : [t.Master_Task_ID];
+      amms.forEach(code => {
+        if (!code || code === 'CÔNG VIỆC CA TRỰC') return;
+        let mTask = ws.masterTasks.find(m => m.Task_ID.toLowerCase() === code.toLowerCase());
+        if (mTask) {
+          mTask.Steps = [...t.Custom_Steps];
+        } else {
+          ws.masterTasks.push({
+            Task_ID: code,
+            ATA: 'ATA',
+            Title: t.Task_Title,
+            Steps: [...t.Custom_Steps],
+            Form586_Item: ''
+          });
+        }
+      });
+      saveSystemState();
+    }
+
+    function toggleStepCheck(idx) {
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+      if (!Array.isArray(t.Checked_Steps)) t.Checked_Steps = [];
+      if (t.Checked_Steps.includes(idx)) {
+        t.Checked_Steps = t.Checked_Steps.filter(i => i !== idx);
+      } else {
+        t.Checked_Steps.push(idx);
+      }
+      renderAll();
+    }
+
+    function onStepDragStart(e, index) {
+      draggedStepIndex = index;
+      e.currentTarget.classList.add('dragging-step');
+    }
+
+    function onStepDragOver(e) {
+      e.preventDefault();
+    }
+
+    function onStepDrop(e, dropIndex) {
+      e.preventDefault();
+      if (draggedStepIndex === null || draggedStepIndex === dropIndex) return;
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+      const moved = t.Custom_Steps.splice(draggedStepIndex, 1)[0];
+      t.Custom_Steps.splice(dropIndex, 0, moved);
+      t.Checked_Steps = [];
+      draggedStepIndex = null;
+      persistTaskStepsToMaster();
+      renderAll();
+    }
+
+    function moveStepOrder(idx, dir, e) {
+      if (e) e.stopPropagation();
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+      const targetIdx = idx + dir;
+      if (targetIdx < 0 || targetIdx >= t.Custom_Steps.length) return;
+      const temp = t.Custom_Steps[idx];
+      t.Custom_Steps[idx] = t.Custom_Steps[targetIdx];
+      t.Custom_Steps[targetIdx] = temp;
+      persistTaskStepsToMaster();
+      renderAll();
+    }
+
+    function deleteStepFromTask(idx, e) {
+      if (e) e.stopPropagation();
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+      t.Custom_Steps.splice(idx, 1);
+      t.Checked_Steps = (t.Checked_Steps || []).filter(i => i !== idx).map(i => (i > idx ? i - 1 : i));
+      persistTaskStepsToMaster();
+      renderAll();
+    }
+
+    function addCustomStepToTask() {
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      const inp = document.getElementById('new-step-input');
+      if (!t || !inp || !inp.value.trim()) return;
+      t.Custom_Steps.push(inp.value.trim());
+      inp.value = '';
+      persistTaskStepsToMaster();
+      renderAll();
+    }
+
+    // VIỆC VÀO/RA CA
+    function toggleSubTask(subId) {
+      const ws = getActiveWorkspace();
+      const sh = ws.shifts.find(s => s.Shift_ID === ws.activeShiftId);
+      if (!sh) return;
+      const st = sh.Sub_Tasks.find(item => item.id === subId);
+      if (st) st.done = !st.done;
+      renderAll();
+    }
+
+    function editSubTaskPrompt(subId) {
+      const ws = getActiveWorkspace();
+      const sh = ws.shifts.find(s => s.Shift_ID === ws.activeShiftId);
+      if (!sh) return;
+      const st = sh.Sub_Tasks.find(item => item.id === subId);
+      if (!st) return;
+      const newText = prompt('Chỉnh sửa nội dung công việc trước khi vào/ra ca:', st.text);
+      if (newText !== null && newText.trim()) {
+        st.text = newText.trim();
+        renderAll();
+      }
+    }
+
+    function deleteSubTask(subId) {
+      const ws = getActiveWorkspace();
+      const sh = ws.shifts.find(s => s.Shift_ID === ws.activeShiftId);
+      if (!sh) return;
+      sh.Sub_Tasks = sh.Sub_Tasks.filter(item => item.id !== subId);
+      renderAll();
+    }
+
+    function addSubTask() {
+      const ws = getActiveWorkspace();
+      const sh = ws.shifts.find(s => s.Shift_ID === ws.activeShiftId);
+      const inp = document.getElementById('new-subtask-input');
+      if (!sh || !inp || !inp.value.trim()) return;
+      sh.Sub_Tasks.push({ id: 'st-' + Date.now(), text: inp.value.trim(), done: false });
+      inp.value = '';
+      renderAll();
+    }
+
+    // =========================================================
+    // QUẢN LÝ PICKSLIP (CUỘN GỌN, BẤM MỞ CHI TIẾT, NGÀY TẠO)
+    // =========================================================
+    function onPickslipSearchInput(val) {
+      pickslipSearchQuery = val;
+      renderAll();
+      const el = document.getElementById('ps-search-input');
+      if (el) {
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
+    }
+
+    function toggleExpandPickslip(psId) {
+      expandedPickslipId = expandedPickslipId === psId ? null : psId;
+      renderAll();
+    }
+
+    function openCreatePickslipModal() {
+      document.getElementById('cp-number').value = '';
+      openModal('modal-create-pickslip');
+    }
+
+    function confirmCreatePickslip() {
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+      const psNo = document.getElementById('cp-number').value.trim();
+      if (!psNo) {
+        showToast('Thiếu số Pickslip!', 'Vui lòng nhập số phiếu Pickslip.');
+        return;
+      }
+      const newPs = {
+        id: 'ps-' + Date.now(),
+        Pickslip_No: psNo,
+        Created_At: currentClockStamp,
+        Items: []
+      };
+      if (!Array.isArray(t.Pickslips)) t.Pickslips = [];
+      t.Pickslips.unshift(newPs);
+      expandedPickslipId = newPs.id;
+      closeModal('modal-create-pickslip');
+      renderAll();
+      showToast('Đã tạo Phiếu Pickslip!', `Phiếu [${psNo}] đã được tạo lúc ${currentClockStamp}.`);
+    }
+
+    function deletePickslipFromTask(psId, e) {
+      if (e) e.stopPropagation();
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+      t.Pickslips = (t.Pickslips || []).filter(p => p.id !== psId);
+      renderAll();
+    }
+
+    function onPickslipPNInput(psId, val) {
+      const masterSrc = getMasterDataSource();
+      const found = (masterSrc.partCatalog || []).find(p => p.Part_Number.toLowerCase() === val.trim().toLowerCase());
+      if (found) {
+        const nameEl = document.getElementById('mat-name-' + psId);
+        const unitEl = document.getElementById('mat-unit-' + psId);
+        const typeEl = document.getElementById('mat-type-' + psId);
+        if (nameEl) nameEl.value = found.Part_Name;
+        if (unitEl) unitEl.value = found.Unit || 'EA';
+        if (typeEl) typeEl.value = found.Part_Type || 'Consumable';
+      }
+    }
+
+    function addMaterialToPickslip(psId) {
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+      const ps = (t.Pickslips || []).find(p => p.id === psId);
+      if (!ps) return;
+
+      const pn = document.getElementById('mat-pn-' + psId).value.trim();
+      const name = document.getElementById('mat-name-' + psId).value.trim() || 'Vật tư bảo dưỡng';
+      const unit = document.getElementById('mat-unit-' + psId).value.trim() || 'EA';
+      const partType = document.getElementById('mat-type-' + psId).value || 'Consumable';
+      const lay = Math.max(1, parseInt(document.getElementById('mat-lay-' + psId).value, 10) || 1);
+
+      if (!pn && !name) {
+        showToast('Thiếu thông tin!', 'Vui lòng nhập Số Part Number hoặc Tên vật tư.');
+        return;
+      }
+
+      ps.Items.push({
+        id: 'mat-' + Date.now(),
+        Part_Number: pn || 'N/A',
+        Part_Name: name,
+        Unit: unit,
+        Part_Type: partType,
+        SL_Lay: lay,
+        SL_Da_Dung: 0
+      });
+
+      renderAll();
+      showToast('Đã thêm vật tư!', `Đã thêm ${pn || name} vào phiếu ${ps.Pickslip_No}.`);
+    }
+
+    function updatePickslipItemQty(psId, matId, field, val) {
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+      const ps = (t.Pickslips || []).find(p => p.id === psId);
+      if (!ps) return;
+      const m = (ps.Items || []).find(item => item.id === matId);
+      if (!m) return;
+      m[field] = Math.max(0, parseInt(val, 10) || 0);
+      renderAll();
+    }
+
+    function deletePickslipItem(psId, matId) {
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+      const ps = (t.Pickslips || []).find(p => p.id === psId);
+      if (!ps) return;
+      ps.Items = (ps.Items || []).filter(item => item.id !== matId);
+      renderAll();
+    }
+
+    // =========================================================
+    // QUẢN LÝ MƯỢN TOOL RIÊNG (NHẮC TRẢ TOOL)
+    // =========================================================
+    function addBorrowedToolToTask() {
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+      const name = document.getElementById('tool-name-input').value.trim();
+      const sn = document.getElementById('tool-sn-input').value.trim();
+      const qty = Math.max(1, parseInt(document.getElementById('tool-qty-input').value, 10) || 1);
+      const note = document.getElementById('tool-note-input').value.trim();
+
+      if (!name) {
+        showToast('Thiếu tên dụng cụ!', 'Vui lòng nhập tên dụng cụ / Tool mượn.');
+        return;
+      }
+
+      if (!Array.isArray(t.Borrowed_Tools)) t.Borrowed_Tools = [];
+      t.Borrowed_Tools.unshift({
+        id: 'tl-' + Date.now(),
+        Tool_Name: name,
+        Part_Or_Serial: sn,
+        Qty: qty,
+        Borrowed_At: currentClockStamp,
+        Returned: false,
+        Note: note || 'Nhớ trả kho trước khi kết thúc ca'
+      });
+
+      renderAll();
+      showToast('Đã ghi nhận mượn Tool!', `Đã thêm "${name}" vào danh sách theo dõi trả Tool.`);
+    }
+
+    function toggleReturnBorrowedTool(toolId) {
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+      const tl = (t.Borrowed_Tools || []).find(item => item.id === toolId);
+      if (!tl) return;
+      tl.Returned = !tl.Returned;
+      renderAll();
+    }
+
+    function deleteBorrowedTool(toolId) {
+      const ws = getActiveWorkspace();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+      t.Borrowed_Tools = (t.Borrowed_Tools || []).filter(item => item.id !== toolId);
+      renderAll();
+    }
+
+    // =========================================================
+    // HOÀN THÀNH TASK & HỎI CẬP NHẬT FORM 586 NẾU CÓ AMM PHÙ HỢP
+    // =========================================================
+    function completeCurrentTaskOnly() {
+      const ws = getActiveWorkspace();
+      const masterSrc = getMasterDataSource();
+      const t = ws.dailyTasks.find(item => item.ID === ws.selectedDailyTaskId);
+      if (!t) return;
+
+      t.Status = 'Hoàn thành';
+      t.Checked_Steps = (t.Custom_Steps || []).map((_, idx) => idx);
+      persistTaskStepsToMaster();
+      renderAll();
+
+      // Kiểm tra xem các mã AMM của Task có khớp với đề mục Form 586 gốc nào không
+      const taskAmms = (Array.isArray(t.AMM_List) && t.AMM_List.length > 0 ? t.AMM_List : [t.Master_Task_ID])
+        .map(a => String(a || '').trim().toLowerCase())
+        .filter(Boolean);
+
+      const matched586Items = (masterSrc.form586Master || []).filter(item => {
+        const linked = String(item.Linked_AMM || '').trim().toLowerCase();
+        return linked && taskAmms.includes(linked);
+      });
+
+      if (matched586Items.length > 0) {
+        pending586ConfirmData = {
+          task: t,
+          matchedItems: matched586Items
+        };
+        document.getElementById('confirm-586-matched-list').innerHTML = matched586Items.map(m => `
+          <div class="p-2 bg-white rounded-lg border border-amber-300">
+            <div class="font-bold text-[#C8102E]">${escapeHtml(m.Item_Code)} (${escapeHtml(m.ATA)}) — AMM: ${escapeHtml(m.Linked_AMM)}</div>
+            <div class="text-slate-700 mt-0.5">${escapeHtml(m.Description)}</div>
+          </div>
+        `).join('');
+        openModal('modal-confirm-586');
+      } else {
+        showToast('Đã hoàn thành công việc!', `Đã đánh dấu hoàn thành công việc cho tàu ${t.Aircraft_Reg}.`);
+      }
+    }
+
+    function confirmRecordToForm586() {
+      if (!pending586ConfirmData) return;
+      const ws = getActiveWorkspace();
+      const { task, matchedItems } = pending586ConfirmData;
+
+      matchedItems.forEach(item => {
+        ws.form586Logs.unshift({
+          Log_ID: 'LOG-' + Date.now() + '-' + Math.floor(Math.random() * 100),
+          Master_Task_ID: item.Linked_AMM || task.Master_Task_ID,
+          Completed_Date: currentClockStamp,
+          Aircraft_Reg: task.Aircraft_Reg,
+          Form_Item: `${item.Item_Code}: ${item.Description}`
+        });
+      });
+
+      pending586ConfirmData = null;
+      closeModal('modal-confirm-586');
+      renderAll();
+      showToast('Đã cập nhật Sổ Tay Form 586!', `Đã ghi nhận ${matchedItems.length} đề mục Form 586 cho tàu ${task.Aircraft_Reg}.`);
+    }
+
+    // =========================================================
+    // MỤC 2A: TRA CỨU PART NUMBER (CHỈ TRA CỨU & BẤM ĐẶT VẬT TƯ SANG MỤC ĐẶT KHO)
+    // =========================================================
+    function renderPartNumberSectionHTML() {
+      const ws = getActiveWorkspace();
+      const ordersCount = (ws.partOrders || []).length;
+
+      return `
+        <div class="space-y-6">
+          <!-- Thanh tìm kiếm tra cứu Part Number -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 space-y-4">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">TRA CỨU DANH MỤC PART NUMBER (IPC CATALOG)</h2>
+                <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  Tra cứu nhanh thông tin phụ tùng. Nhấn <strong>"+ Đặt Vật Tư"</strong> để nhập số tàu bay và chuyển sang mục <strong>Đặt Vật Tư Kho</strong>. (Chỉ Admin mới có quyền thêm/xóa dữ liệu Part Number gốc).
+                </p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button onclick="switchMainTab('warehouse')" class="bg-slate-900 hover:bg-slate-800 text-[#F59E0B] font-bold px-4 py-2.5 rounded-xl shadow-sm text-xs sm:text-sm">
+                  📦 Đi Tới Mục Đặt Vật Tư Kho (${ordersCount})
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <input
+                id="pn-search-input"
+                type="text"
+                value="${escapeHtml(pnSearchQuery)}"
+                oninput="onPartNumberSearchInput(this.value)"
+                placeholder="🔍 Gõ liên tục số Part Number (VD: MS24665, 3-1531-3), tên vật tư, ATA, Rotable/Consumable..."
+                class="w-full bg-slate-50 border border-slate-300 focus:border-[#C8102E] rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <!-- BẢNG DANH MỤC TRA CỨU PART NUMBER -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-100 text-slate-800 p-3.5 px-4 font-bold text-xs sm:text-sm border-b border-slate-200 flex items-center justify-between">
+              <span>DANH MỤC PHỤ TÙNG CHUẨN (IPC CATALOG)</span>
+              <span class="text-xs font-medium text-slate-500">Chế độ tra cứu & chọn đặt hàng</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">
+                    <th class="py-3 px-4">Part Number (P/N) & ATA</th>
+                    <th class="py-3 px-4">Tên Vật Tư</th>
+                    <th class="py-3 px-4 text-center">Phân Loại</th>
+                    <th class="py-3 px-4">IPC & Ghi Chú</th>
+                    <th class="py-3 px-4 text-center">ĐVT</th>
+                    <th class="py-3 px-4 text-right">Chọn Đặt Kho</th>
+                  </tr>
+                </thead>
+                <tbody id="pn-catalog-tbody" class="divide-y divide-slate-200">
+                  ${renderPartNumberCatalogRowsHTML()}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPartNumberCatalogRowsHTML() {
+      const masterSrc = getMasterDataSource();
+      const q = pnSearchQuery.trim().toLowerCase();
+      const filtered = (masterSrc.partCatalog || []).filter(p =>
+        !q ||
+        p.Part_Number.toLowerCase().includes(q) ||
+        p.Part_Name.toLowerCase().includes(q) ||
+        (p.ATA && p.ATA.toLowerCase().includes(q)) ||
+        (p.Part_Type && p.Part_Type.toLowerCase().includes(q))
+      );
+
+      if (filtered.length === 0) {
+        return `<tr><td colspan="6" class="py-8 text-center text-slate-400 font-medium">Không tìm thấy Part Number phù hợp với "${escapeHtml(pnSearchQuery)}".</td></tr>`;
+      }
+
+      return filtered.map((p, idx) => `
+        <tr class="hover:bg-slate-50 align-top">
+          <td class="py-3.5 px-4">
+            <span class="bg-slate-800 text-white font-bold text-[10px] px-2 py-0.5 rounded">${escapeHtml(p.ATA || 'ATA')}</span>
+            <div class="font-mono font-bold text-sm sm:text-base text-slate-900 mt-1">${escapeHtml(p.Part_Number)}</div>
+          </td>
+          <td class="py-3.5 px-4 font-semibold text-slate-900">${escapeHtml(p.Part_Name)}</td>
+          <td class="py-3.5 px-4 text-center">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${p.Part_Type === 'Rotable' ? 'bg-red-50 text-[#C8102E] border border-red-200' : 'bg-amber-50 text-amber-900 border border-amber-200'}">
+              ${escapeHtml(p.Part_Type || 'Consumable')}
+            </span>
+          </td>
+          <td class="py-3.5 px-4">
+            <div class="text-xs font-mono font-semibold text-slate-700">${escapeHtml(p.IPC_Ref || '')}</div>
+            ${p.Notes ? `<div class="text-xs text-slate-500 mt-0.5">${escapeHtml(p.Notes)}</div>` : ''}
+          </td>
+          <td class="py-3.5 px-4 text-center font-bold text-xs">${escapeHtml(p.Unit || 'EA')}</td>
+          <td class="py-3.5 px-4 text-right whitespace-nowrap">
+            <div class="inline-flex items-center gap-1.5">
+              <input id="order-qty-${idx}" type="number" min="1" value="1" class="w-14 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-center font-bold text-xs" />
+              <button onclick="addPartToOrderList('${escapeHtml(p.Part_Number)}', 'order-qty-${idx}')" class="bg-[#F59E0B] hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm">
+                + Đặt Vật Tư
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // =========================================================
+    // MỤC 2B: ĐẶT VẬT TƯ KHO & QUẢN LÝ PICKSLIP TẠM (MỤC RIÊNG)
+    // =========================================================
+    function renderWarehouseOrderSectionHTML() {
+      const ws = getActiveWorkspace();
+      const orders = ws.partOrders || [];
+      const tempPsList = ws.tempPickslips || [];
+
+      return `
+        <div class="space-y-6">
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">QUẢN LÝ ĐẶT VẬT TƯ KHO & PICKSLIP TẠM</h2>
+              <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                Tổng hợp các vật tư đã chọn đặt từ mục Tra Part Number. Nhấn <strong>"📋 Tổng Hợp"</strong> để xem P/N & SL, Copy gửi kho hoặc chuyển sang Pickslip Tạm chờ Kho cấp số.
+              </p>
+            </div>
+          </div>
+
+          <!-- 1. DANH SÁCH VẬT TƯ CẦN ĐẶT -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-900 text-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-[#F59E0B]">
+              <div>
+                <h3 class="font-bold text-sm sm:text-base text-[#F59E0B]">1. DANH SÁCH VẬT TƯ CẦN ĐẶT (${orders.length} mặt hàng)</h3>
+                <p class="text-xs text-slate-300">Nhấn "📋 Tổng Hợp" để xem P/N & Số lượng, Copy riêng hoặc Chuyển thành Pickslip Tạm (tự động xóa sạch bảng này)</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button onclick="openOrderSummaryPopup()" class="bg-[#F59E0B] hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow-sm">
+                  📋 Tổng Hợp
+                </button>
+                ${orders.length > 0 ? `
+                  <button onclick="clearAllPartOrders()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-3 py-2 rounded-xl text-xs">
+                    Xóa hết
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+
+            ${orders.length === 0 ? `
+              <div class="p-8 text-center text-xs sm:text-sm text-slate-500">
+                Danh sách vật tư cần đặt đang trống. Bạn có thể qua mục <strong>"⚙ Tra Part Number"</strong> và nhấn <strong>"+ Đặt Vật Tư"</strong>.
+              </div>
+            ` : `
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                  <thead>
+                    <tr class="bg-slate-100 border-b border-slate-200 text-xs font-bold text-slate-700">
+                      <th class="p-3">Part Number (P/N)</th>
+                      <th class="p-3">Tên Vật Tư</th>
+                      <th class="p-3 text-center">Loại Hàng</th>
+                      <th class="p-3 text-center">SL Đặt</th>
+                      <th class="p-3 text-center">ĐVT</th>
+                      <th class="p-3">Tàu Bay</th>
+                      <th class="p-3 text-right">Xóa</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-200">
+                    ${orders.map(o => `
+                      <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-mono font-bold text-[#C8102E]">${escapeHtml(o.Part_Number)}</td>
+                        <td class="p-3 font-semibold text-slate-900">${escapeHtml(o.Part_Name)}</td>
+                        <td class="p-3 text-center">
+                          <span class="px-2 py-0.5 rounded text-[11px] font-bold ${o.Part_Type === 'Rotable' ? 'bg-red-50 text-[#C8102E]' : 'bg-amber-50 text-amber-900'}">${escapeHtml(o.Part_Type || 'Consumable')}</span>
+                        </td>
+                        <td class="p-3 text-center">
+                          <input type="number" min="1" value="${o.Qty}" onchange="updatePartOrderField('${o.id}', 'Qty', this.value)" class="w-16 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-center font-bold" />
+                        </td>
+                        <td class="p-3 text-center font-bold">${escapeHtml(o.Unit || 'EA')}</td>
+                        <td class="p-3">
+                          <input type="text" value="${escapeHtml(o.Aircraft_Reg || '')}" onchange="updatePartOrderField('${o.id}', 'Aircraft_Reg', this.value)" class="w-24 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-center font-bold text-xs" />
+                        </td>
+                        <td class="p-3 text-right">
+                          <button onclick="deletePartOrderItem('${o.id}')" class="text-slate-400 hover:text-red-600 font-bold px-2">✕</button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+
+          <!-- 2. DANH SÁCH PICKSLIP TẠM CHỜ KHO CẤP SỐ -->
+          <div class="bg-white rounded-2xl shadow-sm border border-amber-300 overflow-hidden">
+            <div class="bg-amber-500 text-slate-950 p-3.5 px-4 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="font-extrabold text-sm sm:text-base">2. DANH SÁCH PICKSLIP TẠM CHỜ KHO CẤP SỐ (${tempPsList.length} phiếu tạm)</h3>
+                <p class="text-xs font-medium text-slate-800">Khi Kho cho số Pickslip, hãy chọn mục tạm dưới đây, nhấn "↪ Chuyển Thành Pickslip", chọn Task và nhập số Kho đã cấp.</p>
+              </div>
+            </div>
+
+            ${tempPsList.length === 0 ? `
+              <div class="p-6 text-center text-xs text-slate-500">
+                Chưa có Pickslip tạm nào. Khi bạn nhấn nút <strong>"📦 Chuyển Thành Pickslip Tạm"</strong> trong cửa sổ Tổng Hợp, các vật tư sẽ gom về đây.
+              </div>
+            ` : `
+              <div class="p-4 space-y-3">
+                ${tempPsList.map(tps => `
+                  <div class="p-3.5 rounded-xl border border-amber-300 bg-amber-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="space-y-1">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="bg-slate-900 text-[#F59E0B] font-mono font-bold text-xs px-2.5 py-0.5 rounded">${escapeHtml(tps.Temp_Code)}</span>
+                        <span class="text-xs font-bold text-slate-700">Tạo lúc: ${escapeHtml(tps.Created_At)}</span>
+                        <span class="bg-amber-200 text-slate-900 font-bold text-xs px-2 py-0.5 rounded-full">${(tps.Items || []).length} mặt hàng</span>
+                      </div>
+                      <div class="text-xs text-slate-700 font-medium">
+                        ${(tps.Items || []).map(it => `<span class="inline-block bg-white border border-slate-200 rounded px-2 py-0.5 mr-1.5 mt-1 font-mono font-semibold text-[#C8102E]">${escapeHtml(it.Part_Number)} (SL: ${it.Qty}${it.Aircraft_Reg ? ' • ' + escapeHtml(it.Aircraft_Reg) : ''})</span>`).join('')}
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                      <button onclick="openConvertTempPickslipModal('${tps.id}')" class="bg-[#C8102E] hover:bg-red-800 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm">
+                        ↪ Chuyển Thành Pickslip (Chọn Task)
+                      </button>
+                      <button onclick="deleteTempPickslip('${tps.id}')" class="text-slate-400 hover:text-red-600 font-bold px-2 text-sm" title="Xóa phiếu tạm">✕</button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    function onPartNumberSearchInput(val) {
+      pnSearchQuery = val;
+      const tbody = document.getElementById('pn-catalog-tbody');
+      if (tbody) {
+        tbody.innerHTML = renderPartNumberCatalogRowsHTML();
+      }
+    }
+
+    function addPartToOrderList(pn, qtyInputId) {
+      const masterSrc = getMasterDataSource();
+      const part = (masterSrc.partCatalog || []).find(p => p.Part_Number === pn);
+      if (!part) return;
+      const qtyEl = document.getElementById(qtyInputId);
+      const qty = Math.max(1, parseInt(qtyEl ? qtyEl.value : 1, 10) || 1);
+
+      pendingOrderPartPN = pn;
+      document.getElementById('order-part-preview').innerHTML = `
+        <div class="font-mono font-bold text-[#C8102E] text-sm">${escapeHtml(part.Part_Number)} <span class="text-xs text-slate-500">(${escapeHtml(part.Part_Type || 'Consumable')} • ${escapeHtml(part.Unit || 'EA')})</span></div>
+        <div class="text-slate-700 mt-0.5">${escapeHtml(part.Part_Name)}</div>
+      `;
+      document.getElementById('order-part-reg-input').value = '';
+      document.getElementById('order-part-qty-input').value = qty;
+      openModal('modal-order-part-reg');
+      setTimeout(() => {
+        const regInp = document.getElementById('order-part-reg-input');
+        if (regInp) regInp.focus();
+      }, 50);
+    }
+
+    function confirmAddPartToOrderList() {
+      const ws = getActiveWorkspace();
+      const masterSrc = getMasterDataSource();
+      const part = (masterSrc.partCatalog || []).find(p => p.Part_Number === pendingOrderPartPN);
+      if (!part) return;
+
+      const reg = document.getElementById('order-part-reg-input').value.trim();
+      const qty = Math.max(1, parseInt(document.getElementById('order-part-qty-input').value, 10) || 1);
+
+      if (!reg) {
+        showToast('Thiếu số tàu bay!', 'Vui lòng nhập Số đăng bạ tàu bay cần đặt vật tư này.');
+        return;
+      }
+
+      const existing = ws.partOrders.find(
+        o => o.Part_Number.toLowerCase() === part.Part_Number.toLowerCase() && (o.Aircraft_Reg || '').toLowerCase() === reg.toLowerCase()
+      );
+      if (existing) {
+        existing.Qty = (Number(existing.Qty) || 0) + qty;
+      } else {
+        ws.partOrders.unshift({
+          id: 'ord-' + Date.now(),
+          Part_Number: part.Part_Number,
+          Part_Name: part.Part_Name,
+          Unit: part.Unit || 'EA',
+          Part_Type: part.Part_Type || 'Consumable',
+          Qty: qty,
+          Aircraft_Reg: reg,
+          Note: '',
+          Status: 'Chưa gửi kho'
+        });
+      }
+
+      pendingOrderPartPN = null;
+      closeModal('modal-order-part-reg');
+      renderAll();
+      showToast('Đã chuyển sang mục Đặt Vật Tư Kho!', `Đã thêm ${qty} ${part.Unit || 'EA'} [${part.Part_Number}] cho tàu ${reg}.`);
+    }
+
+    function updatePartOrderField(ordId, field, val) {
+      const ws = getActiveWorkspace();
+      const ord = (ws.partOrders || []).find(o => o.id === ordId);
+      if (!ord) return;
+      ord[field] = field === 'Qty' ? Math.max(1, parseInt(val, 10) || 1) : val;
+      saveSystemState();
+      renderAll();
+    }
+
+    function deletePartOrderItem(ordId) {
+      const ws = getActiveWorkspace();
+      ws.partOrders = (ws.partOrders || []).filter(o => o.id !== ordId);
+      renderAll();
+    }
+
+    function clearAllPartOrders() {
+      const ws = getActiveWorkspace();
+      ws.partOrders = [];
+      renderAll();
+    }
+
+    // POPUP TỔNG HỢP CHỈ HIỆN P/N VÀ SỐ LƯỢNG
+    function openOrderSummaryPopup() {
+      const ws = getActiveWorkspace();
+      const list = ws.partOrders || [];
+      if (list.length === 0) {
+        showToast('Danh sách trống!', 'Chưa có vật tư nào trong mục Danh sách vật tư cần đặt.');
+        return;
+      }
+      const lines = list.map((o, idx) =>
+        `${idx + 1}. P/N: ${o.Part_Number} | SL: ${o.Qty}`
+      );
+      document.getElementById('order-summary-textarea').value = lines.join('\n');
+      openModal('modal-order-summary');
+    }
+
+    // NÚT 1: CHỈ COPY VĂN BẢN (P/N & SL)
+    function copyOrderSummaryOnly() {
+      const ta = document.getElementById('order-summary-textarea');
+      ta.select();
+      document.execCommand('copy');
+      showToast('Đã sao chép P/N & Số lượng!', 'Bạn có thể dán (Paste) để gửi cho bộ phận Kho.');
+    }
+
+    // NÚT 2: CHUYỂN THÀNH PICKSLIP TẠM VÀ XÓA SẠCH DANH SÁCH VẬT TƯ CẦN ĐẶT
+    function convertOrdersToTempPickslipAndClear() {
+      const ws = getActiveWorkspace();
+      const list = ws.partOrders || [];
+      if (list.length === 0) {
+        showToast('Danh sách trống!', 'Không có vật tư nào để chuyển thành Pickslip tạm.');
+        return;
+      }
+
+      if (!Array.isArray(ws.tempPickslips)) ws.tempPickslips = [];
+      const tempCode = 'TEMP-PS-' + Date.now().toString().slice(-4);
+      ws.tempPickslips.unshift({
+        id: 'tps-' + Date.now(),
+        Temp_Code: tempCode,
+        Created_At: currentClockStamp,
+        Items: JSON.parse(JSON.stringify(list))
+      });
+
+      // Xóa sạch ở mục Danh sách vật tư cần đặt để làm sạch giao diện
+      ws.partOrders = [];
+
+      closeModal('modal-order-summary');
+      renderAll();
+      showToast('Đã chuyển thành Pickslip Tạm & Làm sạch danh sách!', `Đã tạo [${tempCode}] và xóa sạch danh sách vật tư cần đặt.`);
+    }
+
+    // KHI KHO CHO SỐ PICKSLIP -> CHỌN MỤC TẠM -> CHỌN TASK & NHẬP SỐ PICKSLIP ĐỂ CHUYỂN VÀO CÔNG VIỆC
+    function openConvertTempPickslipModal(tempPsId) {
+      const ws = getActiveWorkspace();
+      const tps = (ws.tempPickslips || []).find(item => item.id === tempPsId);
+      if (!tps) return;
+
+      const activeShift = ws.shifts.find(s => s.Shift_ID === ws.activeShiftId) || ws.shifts[0];
+      const shiftTasks = activeShift ? ws.dailyTasks.filter(t => t.Shift_ID === activeShift.Shift_ID) : [];
+      if (shiftTasks.length === 0) {
+        showToast('Chưa có công việc trong ca!', 'Vui lòng tạo ít nhất 1 công việc chính trong Ca Làm Việc để nhận phiếu Pickslip.');
+        return;
+      }
+
+      convertingTempPsId = tempPsId;
+      document.getElementById('conv-temp-info').innerHTML = `
+        <div>Phiếu tạm: <strong class="text-[#C8102E] font-mono">${escapeHtml(tps.Temp_Code)}</strong> (${(tps.Items || []).length} mặt hàng)</div>
+        <div class="text-slate-600 mt-1">${(tps.Items || []).map(i => `${escapeHtml(i.Part_Number)} (SL: ${i.Qty})`).join(', ')}</div>
+      `;
+
+      const sel = document.getElementById('conv-target-task');
+      sel.innerHTML = shiftTasks.map(t =>
+        `<option value="${t.ID}" ${t.ID === ws.selectedDailyTaskId ? 'selected' : ''}>✈ ${escapeHtml(t.Aircraft_Reg)} — ${escapeHtml(t.Task_Title)}</option>`
+      ).join('');
+
+      document.getElementById('conv-ps-no').value = '';
+      openModal('modal-convert-pickslip');
+    }
+
+    function confirmConvertTempPickslipToTask() {
+      const ws = getActiveWorkspace();
+      const tps = (ws.tempPickslips || []).find(item => item.id === convertingTempPsId);
+      if (!tps) return;
+
+      const taskId = document.getElementById('conv-target-task').value;
+      const psNo = document.getElementById('conv-ps-no').value.trim();
+
+      if (!psNo) {
+        showToast('Thiếu số Pickslip!', 'Vui lòng nhập số Pickslip bên Kho đã cấp.');
+        return;
+      }
+
+      const targetTask = ws.dailyTasks.find(t => t.ID === taskId);
+      if (!targetTask) return;
+
+      const newPs = {
+        id: 'ps-' + Date.now(),
+        Pickslip_No: psNo,
+        Created_At: currentClockStamp,
+        Items: (tps.Items || []).map((o, i) => ({
+          id: 'mat-' + Date.now() + '-' + i,
+          Part_Number: o.Part_Number,
+          Part_Name: o.Part_Name,
+          Unit: o.Unit || 'EA',
+          Part_Type: o.Part_Type || 'Consumable',
+          SL_Lay: Number(o.Qty) || 1,
+          SL_Da_Dung: 0
+        }))
+      };
+
+      if (!Array.isArray(targetTask.Pickslips)) targetTask.Pickslips = [];
+      targetTask.Pickslips.unshift(newPs);
+
+      ws.tempPickslips = (ws.tempPickslips || []).filter(item => item.id !== convertingTempPsId);
+      convertingTempPsId = null;
+
+      ws.selectedDailyTaskId = targetTask.ID;
+      expandedPickslipId = newPs.id;
+      closeModal('modal-convert-pickslip');
+      mainTab = 'work';
+      renderAll();
+      showToast('Đã chuyển vào Công việc!', `Đã tạo phiếu [${psNo}] trong công việc tàu ${targetTask.Aircraft_Reg}.`);
+    }
+
+    function deleteTempPickslip(tempPsId) {
+      const ws = getActiveWorkspace();
+      ws.tempPickslips = (ws.tempPickslips || []).filter(item => item.id !== tempPsId);
+      renderAll();
+    }
+
+    function saveManualPartNumber() {
+      if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Không có quyền!', 'Chỉ tài khoản Admin mới được phép thêm dữ liệu Part Number.');
+        return;
+      }
+      const adminWs = getMasterDataSource();
+      const code = document.getElementById('pn-code').value.trim();
+      const ata = document.getElementById('pn-ata').value.trim() || 'ATA 20';
+      const name = document.getElementById('pn-name').value.trim();
+      const unit = document.getElementById('pn-unit').value.trim() || 'EA';
+      const partType = document.getElementById('pn-type').value || 'Consumable';
+      const ipc = document.getElementById('pn-ipc').value.trim() || 'Nhập thủ công';
+      const note = document.getElementById('pn-note').value.trim();
+
+      if (!code || !name) {
+        showToast('Thiếu thông tin!', 'Vui lòng nhập Số Part Number và Tên vật tư.');
+        return;
+      }
+
+      const existingIdx = adminWs.partCatalog.findIndex(p => p.Part_Number.toLowerCase() === code.toLowerCase());
+      const entry = { Part_Number: code, Part_Name: name, ATA: ata, Unit: unit, Part_Type: partType, IPC_Ref: ipc, Notes: note };
+      if (existingIdx >= 0) adminWs.partCatalog[existingIdx] = entry;
+      else adminWs.partCatalog.unshift(entry);
+
+      closeModal('modal-add-pn');
+      renderAll();
+      showToast('Đã lưu Part Number gốc!', `Đã lưu P/N [${code}] vào danh mục hệ thống.`);
+    }
+
+    function deletePartFromCatalog(pn) {
+      if (!currentUser || currentUser.role !== 'admin') return;
+      const adminWs = getMasterDataSource();
+      adminWs.partCatalog = adminWs.partCatalog.filter(p => p.Part_Number !== pn);
+      renderAll();
+      showToast('Đã xóa Part Number!', `Đã xóa P/N [${pn}] khỏi danh mục gốc.`);
+    }
+
+    // =========================================================
+    // MỤC 3: TRA CỨU TASK TRONG FORM 586 & THEO DÕI TIẾN ĐỘ (CHỈ TRA CỨU, KHÔNG CHO THÀNH VIÊN SỬA ĐỀ MỤC GỐC)
+    // =========================================================
+    function renderForm586SectionHTML() {
+      const ws = getActiveWorkspace();
+      const masterSrc = getMasterDataSource();
+      const q586 = form586SearchQuery.trim().toLowerCase();
+
+      const allReconciliation = (masterSrc.form586Master || []).map(item => {
+        const codeL = (item.Item_Code || '').toLowerCase();
+        const ammL = (item.Linked_AMM || '').toLowerCase();
+        const matched = (ws.form586Logs || []).filter(log => {
+          const fL = (log.Form_Item || '').toLowerCase();
+          const mL = (log.Master_Task_ID || '').toLowerCase();
+          return (codeL && fL.includes(codeL)) || (ammL && mL === ammL);
+        });
+        const req = Math.max(1, Number(item.Required_Count) || 1);
+        const isMet = matched.length >= req;
+        return { ...item, matched, doneCount: matched.length, req, isMet };
+      });
+
+      const metCount = allReconciliation.filter(r => r.isMet).length;
+
+      const filteredReconciliation = allReconciliation.filter(item =>
+        !q586 ||
+        item.Item_Code.toLowerCase().includes(q586) ||
+        (item.ATA && item.ATA.toLowerCase().includes(q586)) ||
+        item.Description.toLowerCase().includes(q586) ||
+        (item.Linked_AMM && item.Linked_AMM.toLowerCase().includes(q586))
+      );
+
+      return `
+        <div class="space-y-6">
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 space-y-4">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">TRA CỨU TASK FORM 586 & ĐỐI CHIẾU TIẾN ĐỘ</h2>
+                <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  Tra cứu danh sách các Task có trong Form 586 gốc và theo dõi tiến độ tích lũy kinh nghiệm. (Chỉ Admin mới có quyền nhập/sửa danh mục Task 586 gốc).
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <input
+                id="form586-search-input"
+                type="text"
+                value="${escapeHtml(form586SearchQuery)}"
+                oninput="onForm586SearchInput(this.value)"
+                placeholder="🔍 Tra cứu mã đề mục 586, mã AMM, ATA hoặc nội dung công việc trong Form 586..."
+                class="w-full bg-slate-50 border border-slate-300 focus:border-[#C8102E] rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 focus:outline-none"
+              />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <button onclick="form586SubTab='compare'; renderAll();" class="py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm border transition ${
+                form586SubTab === 'compare' ? 'bg-[#C8102E] text-white border-[#C8102E]' : 'bg-slate-50 text-slate-700 border-slate-200'
+              }">
+                DANH MỤC TASK TRONG FORM 586 (${metCount}/${allReconciliation.length} Đạt)
+              </button>
+              <button onclick="form586SubTab='logs'; renderAll();" class="py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm border transition ${
+                form586SubTab === 'logs' ? 'bg-[#C8102E] text-white border-[#C8102E]' : 'bg-slate-50 text-slate-700 border-slate-200'
+              }">
+                NHẬT KÝ ĐÃ HOÀN THÀNH CỦA TÔI (${ws.form586Logs.length} bản ghi)
+              </button>
+            </div>
+          </div>
+
+          ${form586SubTab === 'compare' ? `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr class="bg-slate-900 text-white border-b-2 border-[#F59E0B] text-xs font-bold uppercase">
+                      <th class="py-3.5 px-4">Mã 586 & ATA</th>
+                      <th class="py-3.5 px-4">Nội Dung Yêu Cầu & Mã AMM Khớp</th>
+                      <th class="py-3.5 px-4 text-center">Tiến Độ</th>
+                      <th class="py-3.5 px-4">Bằng Chứng (Tàu Bay & Ngày Giờ)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="form586-compare-tbody" class="divide-y divide-slate-200">
+                    ${filteredReconciliation.length === 0
+                      ? `<tr><td colspan="4" class="py-8 text-center text-slate-400">Không tìm thấy đề mục Form 586 phù hợp.</td></tr>`
+                      : filteredReconciliation.map(item => `
+                        <tr class="${item.isMet ? 'bg-emerald-50/40' : 'hover:bg-slate-50'}">
+                          <td class="py-3.5 px-4">
+                            <span class="bg-slate-800 text-white font-bold text-[10px] px-2 py-0.5 rounded">${escapeHtml(item.ATA)}</span>
+                            <div class="font-mono font-bold text-sm mt-1">${escapeHtml(item.Item_Code)}</div>
+                          </td>
+                          <td class="py-3.5 px-4">
+                            <div class="font-semibold text-slate-900">${escapeHtml(item.Description)}</div>
+                            ${item.Linked_AMM ? `<div class="text-xs font-mono font-bold text-[#C8102E] mt-0.5">AMM liên kết: ${escapeHtml(item.Linked_AMM)}</div>` : ''}
+                          </td>
+                          <td class="py-3.5 px-4 text-center">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold ${item.isMet ? 'bg-emerald-600 text-white' : 'bg-amber-100 text-amber-900'}">
+                              ${item.doneCount}/${item.req} lần
+                            </span>
+                          </td>
+                          <td class="py-3.5 px-4">
+                            ${item.matched.length === 0
+                              ? `<span class="text-xs italic text-slate-400">Chưa có bản ghi</span>`
+                              : item.matched.map(l => `
+                                  <div class="text-xs font-semibold mb-1">
+                                    <span class="bg-slate-900 text-[#F59E0B] px-2 py-0.5 rounded mr-1">✈ ${escapeHtml(l.Aircraft_Reg)}</span>
+                                    ${escapeHtml(l.Completed_Date)}
+                                  </div>
+                                `).join('')
+                            }
+                          </td>
+                        </tr>
+                      `).join('')
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ` : `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr class="bg-slate-100 text-slate-700 border-b border-slate-200 text-xs font-bold uppercase">
+                      <th class="py-3.5 px-4">Tàu Bay</th>
+                      <th class="py-3.5 px-4">Mã AMM</th>
+                      <th class="py-3.5 px-4">Đề Mục Form 586</th>
+                      <th class="py-3.5 px-4">Ngày Giờ Hoàn Thành</th>
+                      <th class="py-3.5 px-4 text-right">Xóa</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-200">
+                    ${(ws.form586Logs || []).map(l => `
+                      <tr>
+                        <td class="py-3 px-4"><span class="bg-slate-900 text-[#F59E0B] font-bold px-2.5 py-0.5 rounded text-xs">✈ ${escapeHtml(l.Aircraft_Reg)}</span></td>
+                        <td class="py-3 px-4 font-mono font-bold text-[#C8102E]">${escapeHtml(l.Master_Task_ID)}</td>
+                        <td class="py-3 px-4 font-semibold">${escapeHtml(l.Form_Item)}</td>
+                        <td class="py-3 px-4 text-xs text-slate-500">${escapeHtml(l.Completed_Date)}</td>
+                        <td class="py-3 px-4 text-right">
+                          <button onclick="deleteForm586Log('${l.Log_ID}')" class="text-slate-400 hover:text-red-600 font-bold">✕</button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function onForm586SearchInput(val) {
+      form586SearchQuery = val;
+      renderAll();
+      const el = document.getElementById('form586-search-input');
+      if (el) {
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
+    }
+
+    function saveForm586MasterItem() {
+      if (!currentUser || currentUser.role !== 'admin') {
+        showToast('Không có quyền!', 'Chỉ tài khoản Admin mới được phép nhập đề mục Form 586 gốc.');
+        return;
+      }
+      const adminWs = getMasterDataSource();
+      const code = document.getElementById('m586-code').value.trim();
+      const ata = document.getElementById('m586-ata').value.trim() || 'ATA';
+      const desc = document.getElementById('m586-desc').value.trim();
+      const req = Math.max(1, parseInt(document.getElementById('m586-req').value, 10) || 1);
+      const amm = document.getElementById('m586-amm').value.trim();
+
+      if (!code || !desc) {
+        showToast('Thiếu thông tin!', 'Vui lòng nhập Mã đề mục 586 và Nội dung yêu cầu.');
+        return;
+      }
+
+      adminWs.form586Master.unshift({
+        Item_Code: code,
+        ATA: ata,
+        Description: desc,
+        Required_Count: req,
+        Linked_AMM: amm
+      });
+
+      closeModal('modal-add-586-master');
+      renderAll();
+      showToast('Đã lưu đề mục Form 586 Gốc!', `Đã thêm mã [${code}] cho toàn hệ thống.`);
+    }
+
+    function deleteForm586Master(code) {
+      if (!currentUser || currentUser.role !== 'admin') return;
+      const adminWs = getMasterDataSource();
+      adminWs.form586Master = (adminWs.form586Master || []).filter(i => i.Item_Code !== code);
+      renderAll();
+      showToast('Đã xóa đề mục Form 586!', `Đã xóa mã [${code}] khỏi hệ thống.`);
+    }
+
+    function deleteForm586Log(logId) {
+      const ws = getActiveWorkspace();
+      ws.form586Logs = (ws.form586Logs || []).filter(l => l.Log_ID !== logId);
+      renderAll();
+    }
+
+    // =========================================================
+    // MỤC 4: TỪ ĐIỂN KỸ THUẬT
+    // =========================================================
+    function renderDictionarySectionHTML() {
+      return `
+        <div class="space-y-4">
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 class="text-base sm:text-xl font-extrabold text-slate-900">TỪ ĐIỂN KỸ THUẬT HÀNG KHÔNG</h2>
+                <p class="text-xs text-slate-500">Tra cứu tức thì thuật ngữ viết tắt AMM, IPC, MEL</p>
+              </div>
+              <button onclick="openModal('modal-add-dict')" class="bg-[#C8102E] hover:bg-red-800 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm">
+                + Cộng Nhanh Từ Mới
+              </button>
+            </div>
+            <input
+              id="dict-search-input"
+              type="text"
+              value="${escapeHtml(dictSearchQuery)}"
+              oninput="onDictionarySearchInput(this.value)"
+              placeholder="🔍 Gõ liên tục từ viết tắt hoặc nghĩa tiếng Việt..."
+              class="w-full bg-slate-50 border border-slate-300 focus:border-[#C8102E] rounded-xl px-3.5 py-2.5 text-sm font-semibold focus:outline-none"
+            />
+          </div>
+
+          <div id="dict-cards-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            ${renderDictionaryCardsInnerHTML()}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDictionaryCardsInnerHTML() {
+      const ws = getActiveWorkspace();
+      const q = dictSearchQuery.trim().toLowerCase();
+      const list = (ws.dictionary || []).filter(d =>
+        !q ||
+        d.Abbr.toLowerCase().includes(q) ||
+        (d.Full_Term && d.Full_Term.toLowerCase().includes(q)) ||
+        d.VN_Meaning.toLowerCase().includes(q)
+      );
+
+      if (list.length === 0) {
+        return `<div class="col-span-full py-8 text-center text-slate-400">Không tìm thấy thuật ngữ phù hợp.</div>`;
+      }
+
+      return list.map(d => `
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <span class="bg-[#C8102E] text-white font-bold text-sm px-3 py-1 rounded-lg">${escapeHtml(d.Abbr)}</span>
+              <button onclick="deleteDictItem('${escapeHtml(d.Abbr)}')" class="text-slate-300 hover:text-red-600 font-bold">✕</button>
+            </div>
+            <div class="text-xs font-semibold text-slate-500">${escapeHtml(d.Full_Term || '')}</div>
+            <div class="text-sm font-bold text-slate-900 mt-1">${escapeHtml(d.VN_Meaning)}</div>
+          </div>
+          ${d.Notes ? `<div class="mt-3 pt-2 border-t border-slate-100 text-xs text-slate-600 bg-slate-50 p-2 rounded-lg"><strong class="text-slate-800">Ghi chú:</strong> ${escapeHtml(d.Notes)}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function onDictionarySearchInput(val) {
+      dictSearchQuery = val;
+      const grid = document.getElementById('dict-cards-grid');
+      if (grid) grid.innerHTML = renderDictionaryCardsInnerHTML();
+    }
+
+    function saveNewDictItem() {
+      const ws = getActiveWorkspace();
+      const abbr = document.getElementById('dict-abbr').value.trim();
+      const full = document.getElementById('dict-full').value.trim();
+      const vn = document.getElementById('dict-vn').value.trim();
+      const notes = document.getElementById('dict-notes').value.trim();
+
+      if (!abbr || !vn) {
+        showToast('Thiếu thông tin!', 'Vui lòng nhập Từ viết tắt và Nghĩa tiếng Việt.');
+        return;
+      }
+
+      ws.dictionary.unshift({ Abbr: abbr, Full_Term: full, VN_Meaning: vn, Notes: notes });
+      closeModal('modal-add-dict');
+      renderAll();
+      showToast('Đã lưu từ mới!', `Đã thêm "${abbr}" vào Từ điển.`);
+    }
+
+    function deleteDictItem(abbr) {
+      const ws = getActiveWorkspace();
+      ws.dictionary = (ws.dictionary || []).filter(d => d.Abbr !== abbr);
+      renderAll();
+    }
+
+    // =========================================================
+    // MỤC 5: QUẢN TRỊ VIÊN (KHÔNG CÓ NÚT XEM READ-ONLY & KHÔNG CÓ MỤC NHẮC NHỞ)
+    // =========================================================
+    function renderAdminSectionHTML() {
+      let totalShifts = 0;
+      let openShifts = 0;
+      let totalTasks = 0;
+      let doneTasks = 0;
+      let pendingTasks = 0;
+      let totalUnreturnedTools = 0;
+      const allShiftRows = [];
+
+      const memberStats = users.map(u => {
+        const uWs = userWorkspaces[u.username] || createWorkspaceTemplate();
+        const uShifts = uWs.shifts || [];
+        const uTasks = uWs.dailyTasks || [];
+        const uDone = uTasks.filter(t => t.Status === 'Hoàn thành').length;
+        const uPending = uTasks.length - uDone;
+        let uTools = 0;
+        uTasks.forEach(t => {
+          uTools += (t.Borrowed_Tools || []).filter(tl => !tl.Returned).length;
+        });
+
+        totalShifts += uShifts.length;
+        openShifts += uShifts.filter(s => s.Status !== 'Đã kết thúc').length;
+        totalTasks += uTasks.length;
+        doneTasks += uDone;
+        pendingTasks += uPending;
+        totalUnreturnedTools += uTools;
+
+        uShifts.forEach(sh => {
+          const sTasks = uTasks.filter(t => t.Shift_ID === sh.Shift_ID);
+          allShiftRows.push({
+            username: u.username,
+            fullName: u.fullName,
+            staffId: u.staffId,
+            shift: sh,
+            totalMain: sTasks.length,
+            doneMain: sTasks.filter(t => t.Status === 'Hoàn thành').length,
+            regs: Array.from(new Set(sTasks.map(t => t.Aircraft_Reg).filter(Boolean)))
+          });
+        });
+
+        return {
+          user: u,
+          shiftCount: uShifts.length,
+          totalTasks: uTasks.length,
+          doneTasks: uDone,
+          pendingTasks: uPending,
+          unreturnedTools: uTools,
+          logs586Count: (uWs.form586Logs || []).length
+        };
+      });
+
+      const completionRate = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 100;
+
+      return `
+        <div class="space-y-6">
+          <!-- Header Admin -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">BẢNG ĐIỀU KHIỂN QUẢN TRỊ VIÊN (ADMIN DASHBOARD)</h2>
+                <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  Theo dõi tổng thể số lượng thành viên, tiến độ các Task đã xong / chưa xong, ca trực và quản lý tài khoản.
+                </p>
+              </div>
+              <button onclick="openModal('modal-create-user')" class="bg-[#C8102E] hover:bg-red-800 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm text-xs sm:text-sm">
+                + Tạo Tài Khoản Thành Viên Mới
+              </button>
+            </div>
+
+            <!-- 6 Thẻ KPI Tổng Thể -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-5">
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
+                <div class="text-[11px] font-bold text-slate-500 uppercase">Tổng Thành Viên</div>
+                <div class="text-2xl font-black text-slate-900 mt-1">${users.length}</div>
+              </div>
+              <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5">
+                <div class="text-[11px] font-bold text-amber-800 uppercase">Ca Đang Trực</div>
+                <div class="text-2xl font-black text-amber-900 mt-1">${openShifts}/${totalShifts}</div>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
+                <div class="text-[11px] font-bold text-slate-500 uppercase">Tổng Số Task</div>
+                <div class="text-2xl font-black text-slate-900 mt-1">${totalTasks}</div>
+              </div>
+              <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5">
+                <div class="text-[11px] font-bold text-emerald-800 uppercase">Việc Đã Xong</div>
+                <div class="text-2xl font-black text-emerald-700 mt-1">${doneTasks} <span class="text-xs font-bold">(${completionRate}%)</span></div>
+              </div>
+              <div class="bg-red-50 border border-red-200 rounded-xl p-3.5">
+                <div class="text-[11px] font-bold text-[#C8102E] uppercase">Việc Chưa Xong</div>
+                <div class="text-2xl font-black text-[#C8102E] mt-1">${pendingTasks}</div>
+              </div>
+              <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5">
+                <div class="text-[11px] font-bold text-amber-800 uppercase">Tool Đang Mượn</div>
+                <div class="text-2xl font-black text-amber-900 mt-1">${totalUnreturnedTools}</div>
+              </div>
+            </div>
+
+            <!-- Tabs con của Admin (Bổ sung mục Nhập Dữ Liệu Part Number & Form 586 Gốc chỉ dành cho Admin) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mt-5">
+              <button onclick="adminSubTab='dashboard'; renderAll();" class="py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm border transition ${
+                adminSubTab === 'dashboard' ? 'bg-[#C8102E] text-white border-[#C8102E]' : 'bg-slate-50 text-slate-700 border-slate-200'
+              }">
+                📊 Tiến Độ Tổng Thể
+              </button>
+              <button onclick="adminSubTab='shifts'; renderAll();" class="py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm border transition ${
+                adminSubTab === 'shifts' ? 'bg-[#C8102E] text-white border-[#C8102E]' : 'bg-slate-50 text-slate-700 border-slate-200'
+              }">
+                📋 Tất Cả Ca Làm Việc (${allShiftRows.length})
+              </button>
+              <button onclick="adminSubTab='masterdata'; renderAll();" class="py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm border transition ${
+                adminSubTab === 'masterdata' ? 'bg-[#C8102E] text-white border-[#C8102E]' : 'bg-slate-50 text-slate-700 border-slate-200'
+              }">
+                🗄 Nhập Dữ Liệu (P/N & 586)
+              </button>
+              <button onclick="adminSubTab='members'; renderAll();" class="py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm border transition ${
+                adminSubTab === 'members' ? 'bg-[#C8102E] text-white border-[#C8102E]' : 'bg-slate-50 text-slate-700 border-slate-200'
+              }">
+                👥 Quản Lý Tài Khoản (${users.length})
+              </button>
+            </div>
+          </div>
+
+          ${adminSubTab === 'dashboard' ? `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr class="bg-slate-900 text-white border-b-2 border-[#F59E0B] text-xs font-bold uppercase">
+                      <th class="py-3.5 px-4">Thành Viên</th>
+                      <th class="py-3.5 px-4 text-center">Số Ca Trực</th>
+                      <th class="py-3.5 px-4 text-center">Tổng Task</th>
+                      <th class="py-3.5 px-4 text-center">Việc Đã Xong</th>
+                      <th class="py-3.5 px-4 text-center">Việc Chưa Xong</th>
+                      <th class="py-3.5 px-4 text-center">Tool Chưa Trả</th>
+                      <th class="py-3.5 px-4 text-center">Bản Ghi 586</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-200">
+                    ${memberStats.map(st => `
+                      <tr class="hover:bg-slate-50">
+                        <td class="py-3.5 px-4">
+                          <div class="font-bold text-slate-900">${escapeHtml(st.user.fullName)}</div>
+                          <div class="text-xs text-slate-500 font-mono">${escapeHtml(st.user.staffId)} • ${escapeHtml(st.user.title)}</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-center font-bold">${st.shiftCount}</td>
+                        <td class="py-3.5 px-4 text-center font-bold">${st.totalTasks}</td>
+                        <td class="py-3.5 px-4 text-center"><span class="bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full text-xs">${st.doneTasks} xong</span></td>
+                        <td class="py-3.5 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${st.pendingTasks > 0 ? 'bg-red-100 text-[#C8102E]' : 'bg-slate-100 text-slate-500'}">${st.pendingTasks} chưa xong</span></td>
+                        <td class="py-3.5 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${st.unreturnedTools > 0 ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-500'}">${st.unreturnedTools}</span></td>
+                        <td class="py-3.5 px-4 text-center font-bold text-slate-700">${st.logs586Count}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ` : adminSubTab === 'shifts' ? `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 border-b border-slate-200">
+                <div class="flex gap-2">
+                  <button onclick="adminShiftFilterStatus='all'; renderAll();" class="px-3 py-1.5 rounded-xl text-xs font-bold ${adminShiftFilterStatus === 'all' ? 'bg-[#C8102E] text-white' : 'bg-white border border-slate-300'}">Tất cả</button>
+                  <button onclick="adminShiftFilterStatus='open'; renderAll();" class="px-3 py-1.5 rounded-xl text-xs font-bold ${adminShiftFilterStatus === 'open' ? 'bg-amber-500 text-slate-950' : 'bg-white border border-slate-300'}">Đang làm việc</button>
+                  <button onclick="adminShiftFilterStatus='closed'; renderAll();" class="px-3 py-1.5 rounded-xl text-xs font-bold ${adminShiftFilterStatus === 'closed' ? 'bg-emerald-600 text-white' : 'bg-white border border-slate-300'}">Đã kết thúc</button>
+                </div>
+                <input
+                  id="admin-shift-search-input"
+                  type="text"
+                  value="${escapeHtml(adminShiftSearch)}"
+                  oninput="onAdminShiftSearchInput(this.value)"
+                  placeholder="🔍 Tìm thành viên, địa điểm, tàu bay..."
+                  class="w-full sm:w-72 bg-white border border-slate-300 rounded-xl px-3.5 py-1.5 text-xs font-semibold focus:outline-none"
+                />
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr class="bg-slate-900 text-white text-xs font-bold uppercase">
+                      <th class="py-3 px-4">Thành Viên</th>
+                      <th class="py-3 px-4">Ngày & Giờ Bắt Đầu</th>
+                      <th class="py-3 px-4">Địa Điểm</th>
+                      <th class="py-3 px-4">Tàu Bay</th>
+                      <th class="py-3 px-4 text-center">Tiến Độ Việc</th>
+                      <th class="py-3 px-4 text-center">Trạng Thái</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-shifts-tbody" class="divide-y divide-slate-200">
+                    ${renderAdminShiftsRowsHTML(allShiftRows)}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ` : adminSubTab === 'masterdata' ? `
+            ${renderAdminMasterDataSectionHTML()}
+          ` : `
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr class="bg-slate-900 text-white text-xs font-bold uppercase">
+                      <th class="py-3.5 px-4">Họ Tên & Chức Vụ</th>
+                      <th class="py-3.5 px-4">Mã Thành Viên</th>
+                      <th class="py-3.5 px-4">Tên Đăng Nhập</th>
+                      <th class="py-3.5 px-4">Vai Trò</th>
+                      <th class="py-3.5 px-4 text-right">Quản Lý</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-200">
+                    ${users.map(u => `
+                      <tr class="hover:bg-slate-50">
+                        <td class="py-3.5 px-4">
+                          <div class="font-bold text-slate-900">${escapeHtml(u.fullName)}</div>
+                          <div class="text-xs text-slate-500">${escapeHtml(u.title)}</div>
+                        </td>
+                        <td class="py-3.5 px-4 font-mono font-bold text-[#C8102E]">${escapeHtml(u.staffId)}</td>
+                        <td class="py-3.5 px-4 font-mono font-bold">${escapeHtml(u.username)}</td>
+                        <td class="py-3.5 px-4">
+                          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${u.role === 'admin' ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-700'}">${u.role === 'admin' ? 'Admin' : 'Thành viên'}</span>
+                        </td>
+                        <td class="py-3.5 px-4 text-right space-x-1.5">
+                          <button onclick="resetMemberPasswordPrompt('${escapeHtml(u.username)}')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-3 py-1.5 rounded-xl text-xs">Đổi mật khẩu</button>
+                          ${u.username.toLowerCase() !== 'admin' ? `
+                            <button onclick="deleteMemberAccount('${escapeHtml(u.username)}')" class="bg-red-50 hover:bg-red-100 text-[#C8102E] font-bold px-2.5 py-1.5 rounded-xl text-xs">Xóa</button>
+                          ` : ''}
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function renderAdminMasterDataSectionHTML() {
+      const adminWs = getMasterDataSource();
+      const parts = adminWs.partCatalog || [];
+      const items586 = adminWs.form586Master || [];
+
+      return `
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <!-- CỘT 1: QUẢN LÝ & NHẬP DỮ LIỆU PART NUMBER GỐC -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-900 text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+              <div>
+                <h3 class="font-bold text-sm sm:text-base text-[#F59E0B]">1. DỮ LIỆU PART NUMBER GỐC (${parts.length} P/N)</h3>
+                <p class="text-[11px] text-slate-300">Chỉ Admin mới được thêm/xóa P/N tại đây</p>
+              </div>
+              <button onclick="openModal('modal-add-pn')" class="bg-[#C8102E] hover:bg-red-800 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm shrink-0">
+                + Nhập Part Number Mới
+              </button>
+            </div>
+            <div class="max-h-96 overflow-y-auto divide-y divide-slate-200">
+              ${parts.length === 0
+                ? `<div class="p-6 text-center text-xs text-slate-400">Chưa có Part Number nào.</div>`
+                : parts.map(p => `
+                    <div class="p-3.5 hover:bg-slate-50 flex items-start justify-between gap-2">
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <span class="bg-slate-800 text-white font-bold text-[10px] px-2 py-0.5 rounded">${escapeHtml(p.ATA || 'ATA')}</span>
+                          <span class="font-mono font-bold text-sm text-[#C8102E]">${escapeHtml(p.Part_Number)}</span>
+                          <span class="text-[11px] font-bold px-2 py-0.5 rounded ${p.Part_Type === 'Rotable' ? 'bg-red-50 text-[#C8102E]' : 'bg-amber-50 text-amber-900'}">${escapeHtml(p.Part_Type || 'Consumable')} (${escapeHtml(p.Unit || 'EA')})</span>
+                        </div>
+                        <div class="text-xs font-semibold text-slate-900 mt-1">${escapeHtml(p.Part_Name)}</div>
+                        ${p.IPC_Ref ? `<div class="text-[11px] text-slate-500 font-mono mt-0.5">${escapeHtml(p.IPC_Ref)}</div>` : ''}
+                      </div>
+                      <button onclick="deletePartFromCatalog('${escapeHtml(p.Part_Number)}')" class="text-slate-400 hover:text-red-600 font-bold px-2 text-xs" title="Xóa P/N này">✕</button>
+                    </div>
+                  `).join('')
+              }
+            </div>
+          </div>
+
+          <!-- CỘT 2: QUẢN LÝ & NHẬP DỮ LIỆU TASK FORM 586 GỐC -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-900 text-white p-4 flex items-center justify-between border-b-2 border-[#F59E0B]">
+              <div>
+                <h3 class="font-bold text-sm sm:text-base text-[#F59E0B]">2. DỮ LIỆU TASK FORM 586 GỐC (${items586.length} đề mục)</h3>
+                <p class="text-[11px] text-slate-300">Chỉ Admin mới được thêm/xóa đề mục Form 586 tại đây</p>
+              </div>
+              <button onclick="openModal('modal-add-586-master')" class="bg-[#C8102E] hover:bg-red-800 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm shrink-0">
+                + Nhập Task 586 Mới
+              </button>
+            </div>
+            <div class="max-h-96 overflow-y-auto divide-y divide-slate-200">
+              ${items586.length === 0
+                ? `<div class="p-6 text-center text-xs text-slate-400">Chưa có đề mục Form 586 nào.</div>`
+                : items586.map(item => `
+                    <div class="p-3.5 hover:bg-slate-50 flex items-start justify-between gap-2">
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <span class="bg-slate-800 text-white font-bold text-[10px] px-2 py-0.5 rounded">${escapeHtml(item.ATA)}</span>
+                          <span class="font-mono font-bold text-sm text-slate-900">${escapeHtml(item.Item_Code)}</span>
+                          <span class="bg-amber-100 text-amber-900 font-bold text-[10px] px-2 py-0.5 rounded-full">Yêu cầu: ${item.Required_Count} lần</span>
+                        </div>
+                        <div class="text-xs font-semibold text-slate-800 mt-1">${escapeHtml(item.Description)}</div>
+                        ${item.Linked_AMM ? `<div class="text-[11px] font-mono font-bold text-[#C8102E] mt-0.5">AMM khớp: ${escapeHtml(item.Linked_AMM)}</div>` : ''}
+                      </div>
+                      <button onclick="deleteForm586Master('${escapeHtml(item.Item_Code)}')" class="text-slate-400 hover:text-red-600 font-bold px-2 text-xs" title="Xóa đề mục 586 này">✕</button>
+                    </div>
+                  `).join('')
+              }
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAdminShiftsRowsHTML(allShiftRows) {
+      const q = adminShiftSearch.trim().toLowerCase();
+      const filtered = allShiftRows.filter(r => {
+        if (adminShiftFilterStatus === 'open' && r.shift.Status === 'Đã kết thúc') return false;
+        if (adminShiftFilterStatus === 'closed' && r.shift.Status !== 'Đã kết thúc') return false;
+        if (!q) return true;
+        return (
+          r.fullName.toLowerCase().includes(q) ||
+          r.staffId.toLowerCase().includes(q) ||
+          (r.shift.Location || '').toLowerCase().includes(q) ||
+          r.regs.some(reg => reg.toLowerCase().includes(q))
+        );
+      });
+
+      if (filtered.length === 0) {
+        return `<tr><td colspan="6" class="py-8 text-center text-slate-400">Không có ca làm việc nào phù hợp.</td></tr>`;
+      }
+
+      return filtered.map(r => `
+        <tr class="hover:bg-slate-50">
+          <td class="py-3 px-4">
+            <div class="font-bold text-slate-900">${escapeHtml(r.fullName)}</div>
+            <div class="text-xs font-mono text-slate-500">${escapeHtml(r.staffId)}</div>
+          </td>
+          <td class="py-3 px-4 font-semibold">${formatVNDate(r.shift.Work_Date)} (${r.shift.Start_Hour}:${r.shift.Start_Min})</td>
+          <td class="py-3 px-4">${escapeHtml(r.shift.Location)}</td>
+          <td class="py-3 px-4">
+            ${r.regs.length === 0
+              ? `<span class="text-xs italic text-slate-400">Không phát sinh việc</span>`
+              : r.regs.map(reg => `<span class="bg-slate-900 text-[#F59E0B] font-bold text-xs px-2 py-0.5 rounded mr-1">✈ ${escapeHtml(reg)}</span>`).join('')
+            }
+          </td>
+          <td class="py-3 px-4 text-center font-bold">${r.doneMain}/${r.totalMain} việc</td>
+          <td class="py-3 px-4 text-center">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${r.shift.Status === 'Đã kết thúc' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}">${r.shift.Status}</span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function onAdminShiftSearchInput(val) {
+      adminShiftSearch = val;
+      renderAll();
+      const el = document.getElementById('admin-shift-search-input');
+      if (el) {
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
+    }
+
+    function createNewMemberAccount() {
+      const rawUser = document.getElementById('cu-username').value.replace(/\s+/g, '');
+      const pass = document.getElementById('cu-password').value.trim();
+      const fullName = document.getElementById('cu-fullname').value.trim();
+      const staffId = document.getElementById('cu-staffid').value.trim() || generateNextMemberCode();
+      const role = document.getElementById('cu-role').value;
+      const title = document.getElementById('cu-title').value.trim() || 'Kỹ thuật viên bảo dưỡng';
+
+      if (!rawUser || !pass || !fullName) {
+        showToast('Thiếu thông tin!', 'Vui lòng nhập đầy đủ Tên đăng nhập (không dấu cách), Mật khẩu và Họ tên.');
+        return;
+      }
+
+      if (users.some(u => u.username.toLowerCase() === rawUser.toLowerCase())) {
+        showToast('Trùng tên đăng nhập!', `Tài khoản "${rawUser}" đã tồn tại.`);
+        return;
+      }
+
+      users.push({
+        username: rawUser,
+        password: pass,
+        fullName: fullName,
+        staffId: staffId,
+        role: role,
+        title: title
+      });
+      userWorkspaces[rawUser] = createWorkspaceTemplate();
+
+      closeModal('modal-create-user');
+      renderAll();
+      showToast('Đã tạo tài khoản!', `Đã cấp tài khoản "${rawUser}" cho ${fullName}.`);
+    }
+
+    function resetMemberPasswordPrompt(username) {
+      const target = users.find(u => u.username === username);
+      if (!target) return;
+      const newPass = prompt(`Nhập mật khẩu mới cho tài khoản [${target.username}]:`, target.password);
+      if (newPass !== null && newPass.trim()) {
+        target.password = newPass.trim();
+        saveSystemState();
+        renderAll();
+        showToast('Đã đổi mật khẩu!', `Mật khẩu mới của ${target.username} đã được lưu.`);
+      }
+    }
+
+    function deleteMemberAccount(username) {
+      if (username.toLowerCase() === 'admin') return;
+      users = users.filter(u => u.username !== username);
+      delete userWorkspaces[username];
+      renderAll();
+      showToast('Đã xóa tài khoản!', `Đã xóa tài khoản ${username}.`);
+    }
+
+    // =========================================================
+    // SAO LƯU & KHÔI PHỤC DỮ LIỆU
+    // =========================================================
+    function exportFullBackupJSON() {
+      const payload = { version: 'AMA-CLEAN-V11', exportedAt: currentClockStamp, users, userWorkspaces };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Sao_Luu_Bao_Duong_Tau_Bay_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      closeModal('modal-backup');
+      showToast('Đã tải File Sao Lưu!', 'Bạn có thể dùng file này để nạp sang thiết bị khác.');
+    }
+
+    function importFullBackupJSON(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (Array.isArray(parsed.users) && parsed.userWorkspaces) {
+            users = parsed.users;
+            userWorkspaces = parsed.userWorkspaces;
+            saveSystemState();
+            closeModal('modal-backup');
+            renderAll();
+            showToast('Khôi phục thành công!', 'Đã nạp toàn bộ dữ liệu từ file sao lưu.');
+          }
+        } catch (err) {
+          showToast('Lỗi đọc file!', 'File JSON không hợp lệ.');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function resetAllDemoData() {
+      localStorage.removeItem(STORAGE_KEY);
+      loadSystemState();
+      currentUser = users[0];
+      closeModal('modal-backup');
+      renderAll();
+      showToast('Đã khôi phục mặc định!', 'Dữ liệu đã đưa về trạng thái ban đầu.');
+    }
+
+    function init24HourSelects() {
+      const hSel = document.getElementById('ns-hour');
+      const mSel = document.getElementById('ns-min');
+      if (hSel) {
+        let hHtml = '';
+        for (let i = 0; i < 24; i++) {
+          const hh = String(i).padStart(2, '0');
+          hHtml += `<option value="${hh}" ${hh === '08' ? 'selected' : ''}>${hh} giờ</option>`;
+        }
+        hSel.innerHTML = hHtml;
+      }
+      if (mSel) {
+        let mHtml = '';
+        for (let i = 0; i < 60; i++) {
+          const mm = String(i).padStart(2, '0');
+          mHtml += `<option value="${mm}" ${mm === '00' ? 'selected' : ''}>${mm} phút</option>`;
+        }
+        mSel.innerHTML = mHtml;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSystemState();
+      init24HourSelects();
+      refreshGlobalDatalists();
+      updateClock();
+      setInterval(updateClock, 1000);
+    });
+  </script>
+</body>
+</html>
